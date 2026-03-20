@@ -1,0 +1,41 @@
+# v0 / vercel
+__v0_runtime_loader.js
+__v0_devtools.tsx
+__v0_jsx-dev-runtime.ts
+.snowflake/
+.v0-trash/
+.vercel/
+next.user-config.*
+
+# dependencies
+node_modules/
+
+# build outputs
+.next/
+out/
+dist/
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# env files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env*.local
+
+# tests / coverage
+coverage/
+
+# caches / editor / os
+*.tsbuildinfo
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
