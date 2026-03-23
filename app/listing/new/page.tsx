@@ -986,29 +986,38 @@ export default function NewListingPage() {
         {/* Scenario selector */}
         {!scenario && (
           <div className="grid sm:grid-cols-2 gap-4">
+            {/* Scenario card — Sale */}
             <button
               onClick={() => setScenario('sale')}
-              className="p-5 rounded-xl border border-border bg-card dark:bg-surface-elevated text-left hover:border-teal-accent/50 hover:bg-[var(--accent-bg-soft)] transition-all group"
+              className="group relative p-5 rounded-xl border border-border bg-card dark:bg-surface-elevated text-left overflow-hidden hover:border-teal-accent/35 transition-[border-color,background-color] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
-              <div className="w-10 h-10 rounded-lg bg-teal-accent/15 flex items-center justify-center mb-3">
-                <Car className="w-5 h-5 text-teal-accent" />
+              <span aria-hidden="true" className="card-press-carbon absolute inset-0 rounded-[inherit] pointer-events-none z-[1] opacity-0 group-active:opacity-[0.08] dark:group-active:opacity-[0.14] transition-opacity duration-75 ease-in group-active:duration-[40ms]" />
+              <div className="relative z-[2]">
+                <div className="w-10 h-10 rounded-lg bg-teal-accent/15 flex items-center justify-center mb-3">
+                  <Car className="w-5 h-5 text-teal-accent" />
+                </div>
+                <h2 className="font-semibold text-foreground mb-1">Продаю автомобиль</h2>
+                <p className="text-sm text-muted-foreground">
+                  Подать объявление о продаже — фото, параметры, цена, условия
+                </p>
               </div>
-              <h2 className="font-semibold text-foreground mb-1">Продаю автомобиль</h2>
-              <p className="text-sm text-muted-foreground">
-                Подать объявление о продаже — фото, параметры, цена, условия
-              </p>
             </button>
+
+            {/* Scenario card — Wanted */}
             <button
               onClick={() => setScenario('wanted')}
-              className="p-5 rounded-xl border border-border bg-card dark:bg-surface-elevated text-left hover:border-teal-accent/50 hover:bg-[var(--accent-bg-soft)] transition-all group"
+              className="group relative p-5 rounded-xl border border-border bg-card dark:bg-surface-elevated text-left overflow-hidden hover:border-teal-accent/35 transition-[border-color,background-color] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
-              <div className="w-10 h-10 rounded-lg bg-teal-accent/15 flex items-center justify-center mb-3">
-                <Search className="w-5 h-5 text-teal-accent" />
+              <span aria-hidden="true" className="card-press-carbon absolute inset-0 rounded-[inherit] pointer-events-none z-[1] opacity-0 group-active:opacity-[0.08] dark:group-active:opacity-[0.14] transition-opacity duration-75 ease-in group-active:duration-[40ms]" />
+              <div className="relative z-[2]">
+                <div className="w-10 h-10 rounded-lg bg-teal-accent/15 flex items-center justify-center mb-3">
+                  <Search className="w-5 h-5 text-teal-accent" />
+                </div>
+                <h2 className="font-semibold text-foreground mb-1">Ищу автомобиль</h2>
+                <p className="text-sm text-muted-foreground">
+                  Разместить запрос в подбор — участники предложат подходящий вариант
+                </p>
               </div>
-              <h2 className="font-semibold text-foreground mb-1">Ищу автомобиль</h2>
-              <p className="text-sm text-muted-foreground">
-                Разместить запрос в подбор — участники предложат подходящий вариант
-              </p>
             </button>
           </div>
         )}

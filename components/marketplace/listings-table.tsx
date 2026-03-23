@@ -92,7 +92,7 @@ function ListingTableRow({ listing, priority = false }: ListingTableRowProps) {
   const engineTrans = `${listing.engine} / ${listing.transmission}`;
 
   return (
-    <tr className="border-b border-border/50 hover:bg-muted/50 dark:hover:bg-white/[0.03] transition-colors">
+      <tr className="border-b border-border/50 hover:bg-muted/40 dark:hover:bg-white/[0.03] active:bg-[rgba(63,175,165,0.05)] dark:active:bg-[rgba(63,175,165,0.07)] transition-colors duration-150">
       <td className={`${CELL_CLASS} w-[72px]`}>
         <Link href={`/listing/${listing.id}`} className="block">
           <div className="w-14 h-10 rounded-md overflow-hidden bg-muted flex-shrink-0">

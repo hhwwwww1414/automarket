@@ -18,12 +18,27 @@ function WantedCard({ w }: { w: (typeof wantedListings)[0] }) {
     <Link
       href={`/wanted/${w.id}`}
       className={cn(
-        'block rounded-xl border border-border bg-card dark:bg-surface-elevated',
-        'hover:border-teal-accent/40 hover:bg-[var(--accent-bg-soft)] transition-all duration-150',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-accent/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background'
+        // Structure — same system as sale cards
+        'group relative block rounded-xl border overflow-hidden',
+        // Default
+        'border-border bg-card dark:bg-surface-elevated/90 backdrop-blur-sm',
+        // Hover — unified with listing cards
+        'hover:border-teal-accent/35 dark:hover:bg-surface-elevated transition-[border-color,background-color] duration-200',
+        // Focus-visible
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background'
       )}
     >
-      <div className="p-4">
+      {/* Carbon press overlay — same system as listing cards */}
+      <span
+        aria-hidden="true"
+        className={cn(
+          'card-press-carbon',
+          'absolute inset-0 rounded-[inherit] pointer-events-none z-[1]',
+          'opacity-0 group-active:opacity-[0.08] dark:group-active:opacity-[0.13]',
+          'transition-opacity duration-75 ease-in group-active:duration-[40ms]',
+        )}
+      />
+      <div className="relative z-[2] p-4">
         {/* Header */}
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="min-w-0">

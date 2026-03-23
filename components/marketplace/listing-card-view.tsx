@@ -16,7 +16,14 @@ interface ListingCardViewProps {
   className?: string;
 }
 
-/** Основной богатый режим: крупное фото, заголовок, цены, мета, чипы, статус. */
+/**
+ * Cards mode — главный богатый режим.
+ * States:
+ *   default  → border-border, bg-card/surface-elevated
+ *   hover    → border-teal-accent/35, subtle bg lift
+ *   active   → card-press-carbon overlay appears at low opacity
+ *   focus-kbhd → teal ring (no carbon, accessibility)
+ */
 export function ListingCardView({ listing, priority = false, className }: ListingCardViewProps) {
   const title = getListingTitle(listing);
   const badges = getListingBadges(listing);
@@ -25,13 +32,35 @@ export function ListingCardView({ listing, priority = false, className }: Listin
     <Link
       href={`/listing/${listing.id}`}
       className={cn(
-        'block rounded-xl border border-border bg-card/95 dark:bg-surface-elevated/90 backdrop-blur-sm overflow-hidden',
-        'hover:border-teal-accent/50 hover:shadow-sm dark:hover:shadow-none dark:hover:bg-surface-elevated/92 transition-all duration-200',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-accent/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+        // Structure
+        'group relative block rounded-xl border overflow-hidden',
+        // Default
+        'border-border bg-card/95 dark:bg-surface-elevated/90 backdrop-blur-sm',
+        // Hover — border brightens, bg slightly elevated
+        'hover:border-teal-accent/35 dark:hover:bg-surface-elevated transition-[border-color,background-color,box-shadow] duration-200',
+        // Focus-visible — keyboard-accessible ring, no carbon
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background',
         className
       )}
     >
-      <div className="flex min-h-0 items-stretch">
+      {/* ── Carbon press overlay ──────────────────────────────────────────
+          z-[1] sits between card background (below) and content z-[2].
+          Opacity is 0 by default; activates on :active via group-active.
+          Duration-75 for fast "snap in" feel; fades out at 200ms.
+       ────────────────────────────────────────────────────────────────── */}
+      <span
+        aria-hidden="true"
+        className={cn(
+          'card-press-carbon',
+          'absolute inset-0 rounded-[inherit] pointer-events-none z-[1]',
+          'opacity-0 group-active:opacity-[0.08] dark:group-active:opacity-[0.14]',
+          'transition-opacity duration-75 ease-in group-active:duration-[40ms]',
+        )}
+      />
+
+      {/* Content — sits on z-[2], always above the overlay */}
+      <div className="relative z-[2] flex min-h-0 items-stretch">
+        {/* Photo col */}
         <div className="relative w-[160px] sm:w-[200px] lg:w-[240px] flex-shrink-0">
           <ListingImageCarousel
             images={listing.images}
@@ -45,12 +74,20 @@ export function ListingCardView({ listing, priority = false, className }: Listin
               На ресурсах
             </div>
           )}
+          {listing.resourceStatus === 'pre_resources' && (
+            <div className="absolute top-2 left-2 px-2 py-1 bg-warning/90 text-[#09090B] text-[10px] font-semibold rounded-md shadow-sm z-10">
+              До ресурсов
+            </div>
+          )}
         </div>
 
-        <div className="flex-1 min-w-0 flex flex-col p-4 gap-3">
+        {/* Main info */}
+        <div className="flex-1 min-w-0 flex flex-col p-4 gap-2.5">
           <h3 className="font-display font-semibold text-foreground text-base leading-tight line-clamp-2">
             {title}
           </h3>
+
+          {/* Price row */}
           <div className="flex items-baseline gap-2 flex-wrap">
             <span className="font-display font-bold text-foreground text-lg tabular-nums">
               {formatPrice(listing.price)}
@@ -60,16 +97,25 @@ export function ListingCardView({ listing, priority = false, className }: Listin
                 в руки {formatPrice(listing.priceInHand)}
               </span>
             )}
+            {listing.trade && (
+              <span className="text-[11px] font-medium text-teal-accent/80 border border-teal-accent/25 rounded px-1.5 py-0.5">
+                торг
+              </span>
+            )}
           </div>
+
+          {/* Meta row */}
           <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
-              <MapPin className="w-3.5 h-3.5 shrink-0 text-muted-foreground/70" />
+              <MapPin className="w-3.5 h-3.5 shrink-0 opacity-60" />
               {listing.city}
             </span>
             <span className="tabular-nums">{formatMileage(listing.mileage)}</span>
             <span>{listing.engine} / {listing.transmission}</span>
             <span>{listing.owners} хоз</span>
-            <span>{listing.paintCount === 0 ? 'без окрасов' : `${listing.paintCount} окр`}</span>
+            <span className={listing.paintCount === 0 ? 'text-success' : 'text-warning'}>
+              {listing.paintCount === 0 ? 'без окрасов' : `${listing.paintCount} окр`}
+            </span>
             {listing.avtotekaStatus === 'green' && (
               <span className="text-success flex items-center gap-0.5">
                 <CheckCircle className="w-3.5 h-3.5" />
@@ -77,10 +123,13 @@ export function ListingCardView({ listing, priority = false, className }: Listin
               </span>
             )}
           </div>
-          <ListingChipsBlock chips={badges} variant="card" maxCount={6} className="mt-auto pt-1" />
+
+          {/* Chips */}
+          <ListingChipsBlock chips={badges} variant="card" maxCount={6} className="mt-auto pt-0.5" />
         </div>
 
-        <div className="flex flex-col items-end justify-between p-4 pl-0 border-l border-border/50 shrink-0">
+        {/* Status col */}
+        <div className="flex flex-col items-end justify-between p-4 pl-0 border-l border-border/40 shrink-0 min-w-[88px]">
           <ListingStatusBlock listing={listing} layout="vertical" />
         </div>
       </div>

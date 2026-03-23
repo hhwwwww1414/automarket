@@ -145,11 +145,50 @@
 }
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 
-/* Premium woven carbon — ink graphite / midnight navy */
+/* Premium woven carbon — ink graphite / midnight navy (page background) */
 :root {
   --carbon-color: #0d121a;
   --carbon-color2: #141c26;
   --carbon-slit: #05070a;
+}
+
+/* ─── Card Interactive Carbon System ─────────────────────────────────────────
+   Teal-tinted carbon weave for card pressed/active state.
+   Palette specified: #3FAFA5 (base) / #5FC2B9 (lighter) / #2E978E (slit/groove)
+   Only meaningful in dark mode; light mode gets a subtle desaturated tint.
+───────────────────────────────────────────────────────────────────────────── */
+.card-press-carbon {
+  background-color: #2a7470;
+  background-size: 16px 16px;
+  background-position:
+    0 8px, 8px 0,
+    0 8px, 8px 0,
+    0 0, 0 0, 0 0, 0 0, 0 0;
+  background-image:
+    /* Diagonal slit lines */
+    linear-gradient(45deg,  #195250 7%, transparent 7%, transparent 93%, #195250 93%),
+    linear-gradient(-45deg, #195250 7%, transparent 7%, transparent 93%, #195250 93%),
+    linear-gradient(-45deg, #195250 7%, transparent 7%, transparent 93%, #195250 93%),
+    linear-gradient(45deg,  #195250 7%, transparent 7%, transparent 93%, #195250 93%),
+    /* Cell interlacing */
+    linear-gradient(-45deg,
+      transparent 16%, #2E978E 16%, #3FAFA5 20%, transparent 20%,
+      transparent 80%, #2E978E 80%, #3FAFA5 84%, transparent 84%
+    ),
+    linear-gradient(45deg,
+      transparent 28%, #2E978E 28%, #5FC2B9 32%, transparent 32%,
+      transparent 68%, #2E978E 68%, #5FC2B9 72%, transparent 72%
+    ),
+    /* Depth shading */
+    linear-gradient(-135deg, #3FAFA5 8%, #2a7470 30%, transparent 30%, transparent 68%, #3FAFA5 68%, #2a7470 90%),
+    linear-gradient( 135deg, transparent 20%, #3FAFA5 20%, rgba(63,175,165,.55) 31%, #3FAFA5 63%, #2a7470 70%, transparent 78%),
+    linear-gradient(-135deg, transparent 20%, #3FAFA5 20%, #2a7470 38%, #3FAFA5 60%, #195250 78%, transparent 78%);
+  filter: contrast(1.04) saturate(0.72) brightness(0.56);
+}
+
+/* Light-mode override — desaturate and lighten so the overlay stays readable */
+html:not(.dark) .card-press-carbon {
+  filter: contrast(0.85) saturate(0.35) brightness(2.8);
 }
 
 .carbon-fiber-center {
