@@ -145,9 +145,15 @@
 }
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 
-/* Woven carbon fiber texture — center carbon weave */
+/* Premium woven carbon — ink graphite / midnight navy */
+:root {
+  --carbon-color: #0d121a;
+  --carbon-color2: #141c26;
+  --carbon-slit: #05070a;
+}
+
 .carbon-fiber-center {
-  background-color: #121212;
+  background-color: var(--carbon-color);
   background-size: 32px 32px;
   background-position:
     0 16px,
@@ -160,16 +166,19 @@
     0 0,
     0 0;
   background-image:
-    linear-gradient(45deg, #050505 8%, transparent 8%, transparent 92%, #050505 92%),
-    linear-gradient(-45deg, #050505 8%, transparent 8%, transparent 92%, #050505 92%),
-    linear-gradient(-45deg, #050505 8%, transparent 8%, transparent 92%, #050505 92%),
-    linear-gradient(45deg, #050505 8%, transparent 8%, transparent 92%, #050505 92%),
-    linear-gradient(-45deg, transparent 17%, #050505 17%, #050505 21%, transparent 21%, transparent 79%, #050505 79%, #050505 83%, transparent 83%),
-    linear-gradient(45deg, transparent 29%, #050505 29%, #050505 33%, transparent 33%, transparent 67%, #050505 67%, #050505 71%, transparent 71%),
-    linear-gradient(-135deg, #202020 10%, #0b0b0b 33%, transparent 33%, transparent 67%, #161616 67%, #202020 90%),
-    linear-gradient(135deg, transparent 21%, #161616 21%, #2d2d2d 32.6%, #161616 64.5%, #202020 69.8%, #0b0b0b 79%, transparent 79%),
-    linear-gradient(-135deg, transparent 21%, #161616 21%, #202020 40%, #202020 60%, #0b0b0b 79%, transparent 79%);
-  filter: contrast(1.06) saturate(0.92);
+    /* Diagonal weave strands — carbon-color2 / slit */
+    linear-gradient(45deg, var(--carbon-slit) 7%, transparent 7%, transparent 93%, var(--carbon-slit) 93%),
+    linear-gradient(-45deg, var(--carbon-slit) 7%, transparent 7%, transparent 93%, var(--carbon-slit) 93%),
+    linear-gradient(-45deg, var(--carbon-slit) 7%, transparent 7%, transparent 93%, var(--carbon-slit) 93%),
+    linear-gradient(45deg, var(--carbon-slit) 7%, transparent 7%, transparent 93%, var(--carbon-slit) 93%),
+    /* Cross weave — soft interlacing */
+    linear-gradient(-45deg, transparent 16%, var(--carbon-slit) 16%, var(--carbon-color2) 20%, transparent 20%, transparent 80%, var(--carbon-slit) 80%, var(--carbon-color2) 84%, transparent 84%),
+    linear-gradient(45deg, transparent 28%, var(--carbon-slit) 28%, var(--carbon-color2) 32%, transparent 32%, transparent 68%, var(--carbon-slit) 68%, var(--carbon-color2) 72%, transparent 72%),
+    /* Depth layers — carbon-color2 для объёма */
+    linear-gradient(-135deg, var(--carbon-color2) 8%, var(--carbon-color) 30%, transparent 30%, transparent 68%, var(--carbon-color2) 68%, var(--carbon-color) 90%),
+    linear-gradient(135deg, transparent 20%, var(--carbon-color2) 20%, rgba(20, 28, 38, 0.6) 31%, var(--carbon-color2) 63%, var(--carbon-color) 70%, transparent 78%),
+    linear-gradient(-135deg, transparent 20%, var(--carbon-color2) 20%, var(--carbon-color) 38%, var(--carbon-color2) 60%, var(--carbon-slit) 78%, transparent 78%);
+  filter: contrast(1.03) saturate(0.88);
 }
 
 /* Typography scale */

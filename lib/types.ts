@@ -74,6 +74,7 @@ export interface WantedListing {
   mileageMax?: number;
   engine?: string;
   transmission?: string;
+  drive?: string;
   ownersMax?: number;
   paintAllowed: boolean;
   restrictions?: string[];

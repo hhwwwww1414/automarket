@@ -8,17 +8,18 @@ import { getListingTitle, SELLER_LABELS } from '@/lib/listing-utils';
 import { cn } from '@/lib/utils';
 
 const TABLE_COLUMNS = [
-  { key: 'photo', label: '', width: '72px' },
-  { key: 'auto', label: 'Авто', width: '160px' },
-  { key: 'price', label: 'Цена', width: '100px' },
+  { key: 'photo', label: '', width: '68px' },
+  { key: 'auto', label: 'Авто', width: '150px' },
+  { key: 'price', label: 'Цена', width: '110px' },
   { key: 'inHand', label: 'В руки', width: '95px' },
-  { key: 'city', label: 'Город', width: '110px' },
-  { key: 'mileage', label: 'Пробег', width: '88px' },
-  { key: 'engine', label: 'Дв. / КПП', width: '130px', mdOnly: true },
-  { key: 'owners', label: 'Влад.', width: '56px' },
-  { key: 'paint', label: 'Окрасы', width: '80px' },
-  { key: 'status', label: 'Статус', width: '110px' },
-  { key: 'resources', label: 'Ресурсы', width: '80px' },
+  { key: 'city', label: 'Город', width: '100px' },
+  { key: 'mileage', label: 'Пробег', width: '86px' },
+  { key: 'engine', label: 'Дв. / КПП', width: '120px', mdOnly: true },
+  { key: 'owners', label: 'Влад.', width: '54px' },
+  { key: 'paint', label: 'Окрасы', width: '72px' },
+  { key: 'avtoteka', label: 'Автотека', width: '80px', mdOnly: true },
+  { key: 'status', label: 'Продавец', width: '104px' },
+  { key: 'resources', label: 'Ресурсы', width: '90px' },
 ] as const;
 
 interface ListingsTableProps {
@@ -144,7 +145,24 @@ function ListingTableRow({ listing, priority = false }: ListingTableRowProps) {
       </td>
       <td className={`${CELL_CLASS} text-muted-foreground text-xs`}>
         <Link href={`/listing/${listing.id}`} className={CELL_LINK}>
-          {listing.paintCount === 0 ? 'без окр' : `${listing.paintCount} окр`}
+          {listing.paintCount === 0 ? (
+            <span className="text-success">0</span>
+          ) : (
+            <span className="text-warning">{listing.paintCount}</span>
+          )}
+        </Link>
+      </td>
+      <td className={`${CELL_CLASS} text-xs hidden md:table-cell`}>
+        <Link href={`/listing/${listing.id}`} className={CELL_LINK}>
+          {listing.avtotekaStatus === 'green' ? (
+            <span className="text-success font-medium">Зелёная</span>
+          ) : listing.avtotekaStatus === 'yellow' ? (
+            <span className="text-warning font-medium">Жёлтая</span>
+          ) : listing.avtotekaStatus === 'red' ? (
+            <span className="text-destructive font-medium">Красная</span>
+          ) : (
+            <span className="text-muted-foreground/50">—</span>
+          )}
         </Link>
       </td>
       <td className={`${CELL_CLASS} text-muted-foreground text-xs`}>
@@ -155,9 +173,11 @@ function ListingTableRow({ listing, priority = false }: ListingTableRowProps) {
       <td className={CELL_CLASS}>
         <Link href={`/listing/${listing.id}`} className={CELL_LINK}>
           {onResources ? (
-            <span className="text-teal-accent font-medium text-xs">Да</span>
+            <span className="text-teal-accent font-medium text-xs">На ресурсах</span>
+          ) : listing.resourceStatus === 'pre_resources' ? (
+            <span className="text-warning text-xs">До ресурсов</span>
           ) : (
-            <span className="text-muted-foreground/60 text-xs">—</span>
+            <span className="text-muted-foreground/50 text-xs">—</span>
           )}
         </Link>
       </td>

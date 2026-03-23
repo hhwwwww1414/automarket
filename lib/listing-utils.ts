@@ -8,7 +8,8 @@ export const SELLER_LABELS: Record<string, string> = {
 };
 
 export function getListingTitle(listing: SaleListing): string {
-  return [listing.make, listing.model, listing.year, listing.generation].filter(Boolean).join(' • ');
+  const base = `${listing.make} ${listing.model} ${listing.year}`;
+  return listing.generation ? `${base} · ${listing.generation}` : base;
 }
 
 export function getListingBadges(listing: SaleListing): string[] {

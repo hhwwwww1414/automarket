@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Phone, MessageCircle, FileText, MapPin } from 'lucide-react';
+import { Phone, MessageCircle, FileText, CheckCircle, TrendingDown, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { SaleListing } from '@/lib/types';
 import { formatPrice } from '@/lib/marketplace-data';
@@ -15,9 +15,15 @@ const SELLER_LABELS: Record<string, string> = {
 };
 
 const RESOURCE_LABELS: Record<string, string> = {
-  not_listed: 'Пока не на ресурсах',
+  not_listed: 'Не на ресурсах',
   on_resources: 'На ресурсах',
   pre_resources: 'До ресурсов',
+};
+
+const RESOURCE_COLORS: Record<string, string> = {
+  not_listed: 'text-muted-foreground',
+  on_resources: 'text-teal-accent',
+  pre_resources: 'text-warning',
 };
 
 interface DealBlockProps {
@@ -33,82 +39,106 @@ export function DealBlock({ listing, className }: DealBlockProps) {
     !listing.accident &&
     (listing.avtotekaStatus === 'green' || !listing.avtotekaStatus);
 
+  const sellerLabel = SELLER_LABELS[listing.sellerType] ?? listing.sellerType;
+  const resourceLabel = RESOURCE_LABELS[listing.resourceStatus] ?? listing.resourceStatus;
+  const resourceColor = RESOURCE_COLORS[listing.resourceStatus] ?? 'text-muted-foreground';
+
   return (
     <div
       className={cn(
-        'rounded-xl border-2 border-border bg-card dark:bg-surface-elevated p-5 shadow-lg sticky top-20',
+        'rounded-xl border border-border bg-card dark:bg-surface-elevated p-5 shadow-sm sticky top-20',
         className
       )}
     >
-      <div className="space-y-4">
-        {/* Цены */}
-        <div>
-          <div className="text-2xl font-bold text-foreground">{formatPrice(listing.price)}</div>
-          {listing.priceInHand != null && (
-            <div className="text-sm text-muted-foreground mt-0.5">
-              В руки: {formatPrice(listing.priceInHand)}
-            </div>
-          )}
-          {listing.priceOnResources != null && (
-            <div className="text-sm text-muted-foreground">
-              На ресурсах: {formatPrice(listing.priceOnResources)}
-            </div>
-          )}
-        </div>
-
-        <div className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Торг</span>
-            <span className="font-medium">{listing.trade ? 'Да' : 'Нет'}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">На ресурсах</span>
-            <span>{RESOURCE_LABELS[listing.resourceStatus] ?? listing.resourceStatus}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Продавец</span>
-            <span>{SELLER_LABELS[listing.sellerType] ?? listing.sellerType}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Осмотр</span>
-            <span>{listing.city}</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-muted-foreground">Юр. чистота</span>
-            <span
-              className={cn(
-                'font-medium',
-                legalClean ? 'text-success' : 'text-muted-foreground'
-              )}
-            >
-              {legalClean ? 'Чисто' : 'Проверить'}
+      {/* Price block */}
+      <div className="mb-4">
+        <div className="flex items-baseline gap-2 flex-wrap">
+          <span className="text-2xl font-bold text-foreground tabular-nums">
+            {formatPrice(listing.price)}
+          </span>
+          {listing.trade && (
+            <span className="flex items-center gap-1 text-xs text-teal-accent font-medium">
+              <TrendingDown className="w-3.5 h-3.5" />
+              Торг
             </span>
-          </div>
+          )}
         </div>
+        {listing.priceInHand != null && (
+          <div className="flex items-center gap-1.5 mt-1 text-sm text-muted-foreground">
+            <ArrowRight className="w-3.5 h-3.5 shrink-0" />
+            <span>В руки: <span className="font-medium text-foreground tabular-nums">{formatPrice(listing.priceInHand)}</span></span>
+          </div>
+        )}
+        {listing.priceOnResources != null && (
+          <div className="text-sm text-muted-foreground mt-0.5">
+            На ресурсах: <span className="font-medium text-foreground tabular-nums">{formatPrice(listing.priceOnResources)}</span>
+          </div>
+        )}
+      </div>
 
-        <div className="space-y-2 pt-2 border-t border-border">
-          <Button
-            className="w-full h-10 bg-teal-dark dark:bg-teal-accent text-white dark:text-[#070809] font-semibold"
-            onClick={() => setShowPhone(true)}
-          >
-            <Phone className="w-4 h-4 mr-2" />
-            {showPhone ? listing.seller.phone ?? 'Показать контакт' : 'Контакт'}
-          </Button>
+      {/* Deal details */}
+      <div className="space-y-1.5 text-sm border-t border-border pt-4 mb-4">
+        <div className="flex justify-between items-center">
+          <span className="text-muted-foreground">Продавец</span>
+          <span className="font-medium">{sellerLabel}</span>
+        </div>
+        <div className="flex justify-between items-center">
+          <span className="text-muted-foreground">Ресурсы</span>
+          <span className={cn('font-medium', resourceColor)}>{resourceLabel}</span>
+        </div>
+        <div className="flex justify-between items-center">
+          <span className="text-muted-foreground">Осмотр</span>
+          <span className="font-medium">{listing.city}</span>
+        </div>
+        {listing.kickback && (
+          <div className="flex justify-between items-center">
+            <span className="text-muted-foreground">Откат</span>
+            <span className="font-medium text-teal-accent">Да</span>
+          </div>
+        )}
+        <div className="flex justify-between items-center">
+          <span className="text-muted-foreground">Юр. чистота</span>
+          <span className={cn('font-medium flex items-center gap-1', legalClean ? 'text-success' : 'text-muted-foreground')}>
+            {legalClean && <CheckCircle className="w-3.5 h-3.5" />}
+            {legalClean ? 'Чисто' : 'Уточнить'}
+          </span>
+        </div>
+      </div>
+
+      {/* CTA buttons */}
+      <div className="space-y-2">
+        <Button
+          className="w-full h-10 bg-teal-dark dark:bg-teal-accent text-white dark:text-[#070809] font-semibold hover:opacity-90"
+          onClick={() => setShowPhone(true)}
+        >
+          <Phone className="w-4 h-4 mr-2" />
+          {showPhone ? (listing.seller.phone ?? 'Показать контакт') : 'Показать контакт'}
+        </Button>
+        <Button variant="outline" className="w-full h-10" asChild>
+          <a href="#">
+            <MessageCircle className="w-4 h-4 mr-2" />
+            Написать в чат
+          </a>
+        </Button>
+        {listing.reportUrl && (
           <Button variant="outline" className="w-full h-10" asChild>
-            <a href="#">
-              <MessageCircle className="w-4 h-4 mr-2" />
-              Написать
+            <a href={listing.reportUrl} target="_blank" rel="noopener noreferrer">
+              <FileText className="w-4 h-4 mr-2" />
+              Отчёт / VIN
             </a>
           </Button>
-          {listing.reportUrl && (
-            <Button variant="outline" className="w-full h-10" asChild>
-              <a href={listing.reportUrl} target="_blank" rel="noopener noreferrer">
-                <FileText className="w-4 h-4 mr-2" />
-                Отчёт / VIN
-              </a>
-            </Button>
-          )}
-        </div>
+        )}
+      </div>
+
+      {/* Seller badge */}
+      <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
+        <span>{listing.seller.name}</span>
+        {listing.seller.verified && (
+          <span className="flex items-center gap-1 text-success">
+            <CheckCircle className="w-3 h-3" />
+            Верифицирован
+          </span>
+        )}
       </div>
     </div>
   );

@@ -6,9 +6,10 @@ const FILTERS = [
   { id: 'no_paint', label: 'Без окрасов' },
   { id: 'owners_12', label: '1-2 хоз' },
   { id: 'pts_original', label: 'ПТС оригинал' },
-  { id: 'avtoteka_green', label: 'Зелёная автотека' },
+  { id: 'avtoteka_green', label: 'Автотека' },
   { id: 'no_taxi', label: 'Не такси' },
   { id: 'price_in_hand', label: 'Цена в руки' },
+  { id: 'no_invest', label: 'Без вложений' },
 ];
 
 interface QuickFiltersProps {

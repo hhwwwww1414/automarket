@@ -43,11 +43,11 @@ export function CarbonFiberBackground({ className, viewMode = 'cards' }: CarbonF
   }, []);
 
   const isTable = viewMode === 'table';
-  const carbonOpacity = isTable ? 0.08 : isMobile ? 0.1 : 0.18;
+  const carbonOpacity = isTable ? 0.1 : isMobile ? 0.12 : 0.22;
 
   const shiftY = reducedMotion ? 0 : progress * 20;
-  const darkenOpacity = 0.08 + progress * 0.28;
-  const glowOpacity = reducedMotion ? 0.04 : Math.max(0.02, 0.07 - progress * 0.03);
+  const darkenOpacity = 0.06 + progress * 0.24;
+  const glowOpacity = reducedMotion ? 0.02 : Math.max(0.012, 0.035 - progress * 0.015);
 
   return (
     <div
