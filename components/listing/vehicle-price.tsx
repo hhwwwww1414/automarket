@@ -1,5 +1,6 @@
 import { Vehicle, formatPrice } from '@/lib/marketplace-data';
 import { TrendingDown, TrendingUp, Minus, CreditCard } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface VehiclePriceProps {
   vehicle: Vehicle;
@@ -10,57 +11,57 @@ export function VehiclePrice({ vehicle }: VehiclePriceProps) {
     low: {
       label: 'хорошая цена',
       icon: TrendingDown,
-      bgColor: 'bg-green-50',
-      textColor: 'text-green-700',
-      borderColor: 'border-green-200',
+      className: 'bg-[var(--status-good-bg)] text-[var(--status-good-fg)] border-[var(--status-good-fg)]/25',
     },
     normal: {
       label: 'нормальная цена',
       icon: Minus,
-      bgColor: 'bg-blue-50',
-      textColor: 'text-blue-700',
-      borderColor: 'border-blue-200',
+      className: 'bg-[var(--status-normal-bg)] text-[var(--status-normal-fg)] border-[var(--status-normal-fg)]/25',
     },
     high: {
       label: 'выше рынка',
       icon: TrendingUp,
-      bgColor: 'bg-orange-50',
-      textColor: 'text-orange-700',
-      borderColor: 'border-orange-200',
+      className: 'bg-[var(--status-high-bg)] text-[var(--status-high-fg)] border-[var(--status-high-fg)]/25',
     },
   };
 
   const status = priceStatusConfig[vehicle.priceStatus];
   const StatusIcon = status.icon;
-
-  // Calculate monthly payment (simple estimate)
   const monthlyPayment = Math.round(vehicle.price / 60);
 
   return (
-    <div className="bg-card rounded-lg border border-border p-4">
-      {/* Main Price */}
-      <div className="flex items-center justify-between gap-3 mb-3">
-        <p className="text-3xl font-bold text-foreground whitespace-nowrap">
-          {formatPrice(vehicle.price)}
-        </p>
-        <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap shrink-0 ${status.bgColor} ${status.textColor} border ${status.borderColor}`}>
-          <StatusIcon className="w-3 h-3 shrink-0" />
-          <span>{status.label}</span>
+    <div className="relative bg-card dark:bg-surface-elevated rounded-2xl border-2 border-border p-6 sm:p-7 shadow-lg overflow-hidden">
+      <div className="relative">
+        <div className="flex flex-col gap-3 mb-6">
+          <div className="flex items-baseline gap-2 flex-wrap">
+            <span className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground tracking-[-0.02em] leading-tight">
+              {new Intl.NumberFormat('ru-RU').format(vehicle.price)}
+            </span>
+            <span className="font-display text-2xl sm:text-3xl font-bold text-foreground">₽</span>
+          </div>
+          <div
+            className={cn(
+              'flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border-2 w-fit',
+              status.className
+            )}
+          >
+            <StatusIcon className="w-4 h-4 shrink-0" />
+            <span>{status.label}</span>
+          </div>
         </div>
-      </div>
 
-      {/* Credit Info */}
-      <div className="bg-surface-info rounded-lg p-3 flex items-center gap-3">
-        <div className="w-10 h-10 bg-teal-accent/10 rounded-lg flex items-center justify-center">
-          <CreditCard className="w-5 h-5 text-teal-accent" />
-        </div>
-        <div>
-          <p className="text-sm font-medium text-foreground">
-            от {formatPrice(monthlyPayment)}/мес
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Кредит от 4.9% без первого взноса
-          </p>
+        <div className="bg-surface-info dark:bg-surface-3 rounded-xl p-5 flex items-center gap-4">
+          <div className="w-14 h-14 bg-teal-accent/15 dark:bg-teal-accent/20 rounded-xl flex items-center justify-center shrink-0">
+            <CreditCard className="w-7 h-7 text-teal-accent" />
+          </div>
+          <div>
+            <p className="text-xl font-bold text-foreground">
+              от {formatPrice(monthlyPayment)}/мес
+            </p>
+            <p className="text-base text-muted-foreground mt-1 font-medium">
+              Кредит от 4.9% без первого взноса
+            </p>
+          </div>
         </div>
       </div>
     </div>

@@ -1,11 +1,19 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter } from 'next/font/google'
+import { Inter, Manrope } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import { ThemeProvider } from '@/components/theme-provider'
+import { PremiumBackground } from '@/components/layout/premium-background'
 import './globals.css'
 
-const inter = Inter({ 
-  subsets: ["latin", "cyrillic"],
-  variable: '--font-inter'
+const inter = Inter({
+  subsets: ['latin', 'cyrillic'],
+  variable: '--font-inter',
+});
+
+const manrope = Manrope({
+  subsets: ['latin', 'cyrillic'],
+  variable: '--font-display',
+  weight: ['500', '600', '700', '800'],
 });
 
 export const metadata: Metadata = {
@@ -44,9 +52,12 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="ru" className={inter.variable}>
+    <html lang="ru" className={`${inter.variable} ${manrope.variable}`} suppressHydrationWarning>
       <body className="font-sans antialiased">
-        {children}
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+          <PremiumBackground cursorReactive />
+          {children}
+        </ThemeProvider>
         <Analytics />
       </body>
     </html>

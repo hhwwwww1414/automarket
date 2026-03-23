@@ -20,13 +20,13 @@ export function VehicleSpecs({ vehicle }: VehicleSpecsProps) {
   ];
 
   return (
-    <div className="bg-card rounded-lg border border-border p-4">
-      <h3 className="font-semibold text-foreground mb-4">Характеристики</h3>
-      <div className="space-y-2.5">
+    <div className="bg-card dark:bg-surface-elevated rounded-2xl border-2 border-border p-6 sm:p-7 shadow-lg">
+      <h3 className="font-display font-semibold text-foreground mb-5 text-lg sm:text-xl tracking-[-0.01em]">Характеристики</h3>
+      <div className="space-y-1">
         {specs.map((spec) => (
-          <div key={spec.label} className="flex items-baseline justify-between gap-4 text-sm">
-            <span className="text-muted-foreground min-w-0 truncate">{spec.label}</span>
-            <span className="text-foreground font-medium whitespace-nowrap shrink-0">{spec.value}</span>
+          <div key={spec.label} className="flex items-baseline justify-between gap-4 py-3 border-b border-border/50 last:border-0">
+            <span className="text-base text-muted-foreground min-w-0 truncate font-medium">{spec.label}</span>
+            <span className="text-base font-semibold text-foreground whitespace-nowrap shrink-0">{spec.value}</span>
           </div>
         ))}
       </div>

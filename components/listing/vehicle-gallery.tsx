@@ -18,7 +18,6 @@ export function VehicleGallery({ vehicle }: VehicleGalleryProps) {
   const totalSlides = images.length + (hasVideo ? 1 : 0);
   const isVideoSlide = hasVideo && selectedIndex === images.length;
 
-  // Play/pause video on slide change
   useEffect(() => {
     if (!videoRef.current || !hasVideo) return;
     if (isVideoSlide) {
@@ -37,7 +36,6 @@ export function VehicleGallery({ vehicle }: VehicleGalleryProps) {
     setSelectedIndex(prev => (prev === totalSlides - 1 ? 0 : prev + 1));
   };
 
-  // Touch swipe
   const touchStartX = useRef<number | null>(null);
   const onTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
   const onTouchEnd = (e: React.TouchEvent) => {
@@ -48,14 +46,12 @@ export function VehicleGallery({ vehicle }: VehicleGalleryProps) {
   };
 
   return (
-    <div className="space-y-3">
-      {/* Main viewer */}
+    <div className="space-y-4">
       <div
-        className="relative aspect-[4/3] rounded-lg overflow-hidden bg-muted group"
+        className="relative aspect-[4/3] rounded-xl overflow-hidden bg-muted group shadow-sm ring-2 ring-border/50"
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
       >
-        {/* Photo slides */}
         {images.map((src, i) => (
           <Image
             key={src}
@@ -69,7 +65,6 @@ export function VehicleGallery({ vehicle }: VehicleGalleryProps) {
           />
         ))}
 
-        {/* Video slide */}
         {hasVideo && (
           <video
             ref={videoRef}
@@ -82,52 +77,56 @@ export function VehicleGallery({ vehicle }: VehicleGalleryProps) {
           />
         )}
 
-        {/* Navigation arrows */}
         {totalSlides > 1 && (
           <>
             <button
               onClick={goToPrevious}
-              className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white z-10"
+              className="absolute left-3 top-1/2 -translate-y-1/2 min-w-11 min-h-11 bg-card/95 backdrop-blur-sm rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-card shadow-md z-10"
+              aria-label="Предыдущее фото"
             >
               <ChevronLeft className="w-5 h-5 text-foreground" />
             </button>
             <button
               onClick={goToNext}
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white z-10"
+              className="absolute right-3 top-1/2 -translate-y-1/2 min-w-11 min-h-11 bg-card/95 backdrop-blur-sm rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-card shadow-md z-10"
+              aria-label="Следующее фото"
             >
               <ChevronRight className="w-5 h-5 text-foreground" />
             </button>
           </>
         )}
 
-        {/* Top actions — hide when video controls are active */}
         {!isVideoSlide && (
           <div className="absolute top-3 right-3 flex gap-2 z-10">
-            <button className="w-10 h-10 bg-white/90 rounded-full flex items-center justify-center hover:bg-white transition-colors">
+            <button
+              className="min-w-11 min-h-11 bg-card/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-card shadow-sm transition-all"
+              aria-label="Добавить в избранное"
+            >
               <Heart className="w-5 h-5 text-muted-foreground hover:text-red-500 transition-colors" />
             </button>
-            <button className="w-10 h-10 bg-white/90 rounded-full flex items-center justify-center hover:bg-white transition-colors">
+            <button
+              className="min-w-11 min-h-11 bg-card/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-card shadow-sm transition-all"
+              aria-label="Развернуть"
+            >
               <Expand className="w-5 h-5 text-muted-foreground" />
             </button>
           </div>
         )}
 
-        {/* Counter */}
-        <div className="absolute bottom-3 right-3 flex items-center gap-1 px-2 py-1 bg-black/60 rounded text-white text-sm z-10">
-          {isVideoSlide && <Play className="w-3 h-3 fill-white" />}
+        <div className="absolute bottom-3 right-3 flex items-center gap-2 px-3 py-2 bg-black/60 backdrop-blur-sm rounded-lg text-white text-base font-medium z-10">
+          {isVideoSlide && <Play className="w-4 h-4 fill-white" />}
           <span>{selectedIndex + 1} / {totalSlides}</span>
         </div>
       </div>
 
-      {/* Thumbnails */}
       {totalSlides > 1 && (
         <div className="flex gap-2 overflow-x-auto pb-2">
           {images.map((src, index) => (
             <button
               key={src}
               onClick={() => setSelectedIndex(index)}
-              className={`relative w-20 h-16 rounded-md overflow-hidden flex-shrink-0 border-2 transition-colors ${
-                index === selectedIndex ? 'border-teal-accent' : 'border-transparent hover:border-border'
+              className={`relative w-20 h-16 rounded-lg overflow-hidden flex-shrink-0 border-2 transition-colors ${
+                index === selectedIndex ? 'border-teal-accent ring-1 ring-teal-accent/30' : 'border-transparent hover:border-border'
               }`}
             >
               <Image
@@ -139,15 +138,13 @@ export function VehicleGallery({ vehicle }: VehicleGalleryProps) {
             </button>
           ))}
 
-          {/* Video thumbnail */}
           {hasVideo && (
             <button
               onClick={() => setSelectedIndex(images.length)}
-              className={`relative w-20 h-16 rounded-md overflow-hidden flex-shrink-0 border-2 transition-colors ${
-                isVideoSlide ? 'border-teal-accent' : 'border-transparent hover:border-border'
+              className={`relative w-20 h-16 rounded-lg overflow-hidden flex-shrink-0 border-2 transition-colors ${
+                isVideoSlide ? 'border-teal-accent ring-1 ring-teal-accent/30' : 'border-transparent hover:border-border'
               }`}
             >
-              {/* Poster = first image */}
               <Image
                 src={images[0]}
                 alt="Видео"
@@ -164,8 +161,7 @@ export function VehicleGallery({ vehicle }: VehicleGalleryProps) {
         </div>
       )}
 
-      {/* Photo count link */}
-      <button className="text-sm text-teal-accent hover:text-teal-dark hover:underline transition-colors">
+      <button className="text-base font-semibold text-teal-accent hover:text-teal-dark hover:underline underline-offset-4 transition-colors">
         Развернуть все фото ({images.length}{hasVideo ? ' + видео' : ''})
       </button>
     </div>

@@ -1,14 +1,14 @@
 import { Vehicle } from '@/lib/marketplace-data';
 import { Star, MessageSquare, PlayCircle, Settings, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
+import { BrandLogo } from '@/components/ui/brand-logo';
 
 interface BrandInfoProps {
   vehicle: Vehicle;
 }
 
 export function BrandInfo({ vehicle }: BrandInfoProps) {
-  // Mock rating based on vehicle make
-  const rating = vehicle.make === 'Toyota' || vehicle.make === 'Mercedes-Benz' ? 8.5 : 
+  const rating = vehicle.make === 'Toyota' || vehicle.make === 'Mercedes-Benz' ? 8.5 :
                  vehicle.make === 'BMW' || vehicle.make === 'Audi' ? 8.2 :
                  vehicle.make === 'Skoda' || vehicle.make === 'Volkswagen' ? 7.8 :
                  vehicle.make === 'Hyundai' || vehicle.make === 'Kia' ? 7.5 : 7.0;
@@ -21,45 +21,44 @@ export function BrandInfo({ vehicle }: BrandInfoProps) {
   ];
 
   return (
-    <div className="bg-card rounded-lg border border-border p-4">
-      {/* Brand Header */}
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center text-lg font-bold text-teal-dark">
-          {vehicle.make.charAt(0)}
-        </div>
+    <div className="bg-card dark:bg-surface-elevated rounded-2xl border-2 border-border shadow-lg p-6">
+      <div className="flex items-center gap-3 mb-5">
+        <BrandLogo
+          brandName={vehicle.make}
+          size={56}
+          fallbackClassName="text-xl text-teal-accent"
+        />
         <div>
-          <h3 className="font-semibold text-foreground">{vehicle.make} {vehicle.model}</h3>
-          <p className="text-sm text-muted-foreground">{vehicle.generation} поколение</p>
+          <h3 className="font-display font-semibold text-foreground text-lg tracking-[-0.01em]">{vehicle.make} {vehicle.model}</h3>
+          <p className="text-base text-muted-foreground font-medium">{vehicle.generation} поколение</p>
         </div>
       </div>
 
-      {/* Rating */}
-      <div className="bg-surface-info rounded-lg p-3 mb-4">
+      <div className="bg-surface-info dark:bg-surface-3 rounded-xl p-4 mb-5">
         <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Оценка поколения</span>
-          <div className="flex items-center gap-1">
-            <Star className="w-4 h-4 text-warning fill-warning" />
-            <span className="font-bold text-foreground">{rating}</span>
+          <span className="text-base text-muted-foreground font-medium">Оценка поколения</span>
+          <div className="flex items-center gap-2">
+            <Star className="w-5 h-5 text-warning fill-warning" />
+            <span className="font-bold text-foreground text-lg">{rating}</span>
           </div>
         </div>
       </div>
 
-      {/* Quick Links */}
       <div className="space-y-1">
         {links.map((link) => (
           <Link
             key={link.label}
             href="#"
-            className="flex items-center justify-between py-2 px-2 -mx-2 rounded-lg hover:bg-muted transition-colors group"
+            className="flex items-center justify-between py-3 px-3 -mx-3 rounded-xl hover:bg-muted dark:hover:bg-surface-3 transition-colors group"
           >
-            <div className="flex items-center gap-2 text-sm">
+            <div className="flex items-center gap-3 text-base">
               <link.icon className="w-4 h-4 text-muted-foreground group-hover:text-teal-accent transition-colors" />
-              <span className="text-muted-foreground group-hover:text-foreground transition-colors">
+              <span className="text-muted-foreground group-hover:text-foreground transition-colors font-medium">
                 {link.label}
               </span>
             </div>
             {link.count && (
-              <span className="text-xs text-muted-foreground">{link.count}</span>
+              <span className="text-sm text-muted-foreground font-medium">{link.count}</span>
             )}
           </Link>
         ))}

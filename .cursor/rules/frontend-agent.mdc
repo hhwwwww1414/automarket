@@ -1,0 +1,81 @@
+---
+description: Frontend agent rules for React/Next.js/Tailwind/shadcn projects
+globs:
+  - "app/**/*"
+  - "src/**/*"
+  - "components/**/*"
+  - "pages/**/*"
+  - "lib/**/*"
+alwaysApply: true
+---
+
+# Frontend agent rules
+
+## Mission
+Build frontend changes that are correct, accessible, design-consistent, and easy to review.
+Prefer small, high-confidence diffs over broad rewrites.
+
+## Tool routing
+- Use Context7 before using unfamiliar APIs, framework features, config, or setup steps.
+- Use Storybook MCP before editing or creating UI components. Do not invent props, variants, or tokens.
+- Use Chrome DevTools MCP for runtime bugs: layout issues, hydration mismatches, console errors, network failures, CSS problems, and performance regressions.
+- Use Playwright for browser flow validation after changes.
+- Use Figma MCP for design-driven work instead of guessing from screenshots.
+
+## Required workflow
+1. Read the existing code and reuse nearby patterns.
+2. Pull current docs with Context7 before using unfamiliar APIs.
+3. For component work, inspect Storybook stories/docs first.
+4. Make the smallest change that solves the problem.
+5. Validate before finishing.
+6. Summarize what changed, how it was verified, and any remaining risks.
+
+## Validation checklist
+Run the relevant checks after changes:
+- lint
+- typecheck
+- tests for touched logic
+- Storybook stories/tests for touched components
+- browser smoke test for affected flows
+- accessibility checks when UI changed
+
+Default commands if the repo uses pnpm:
+- `pnpm lint`
+- `pnpm typecheck`
+- `pnpm test`
+- `pnpm storybook`
+- `pnpm build`
+
+## Frontend standards
+- Reuse existing design-system components, tokens, utilities, and layout primitives.
+- Do not introduce a new UI library without explicit approval.
+- Do not hardcode colors, spacing, font sizes, shadows, or breakpoints if tokens already exist.
+- Prefer semantic HTML first, then add ARIA only when necessary.
+- Preserve keyboard navigation, focus visibility, and accessible names.
+- Keep components small, composable, and easy to test.
+- Avoid large refactors unless the task explicitly asks for them.
+
+## Storybook rules
+- Treat Storybook as the source of truth for component API and documented variants.
+- Only use props and variants that are explicitly documented or demonstrated.
+- After component changes, update or add stories for normal, empty, loading, error, disabled, and mobile-relevant states when applicable.
+
+## Browser debugging rules
+- When a bug only appears in the browser, inspect it with Chrome DevTools MCP before editing code.
+- Check console, network, computed styles, DOM state, and screenshots before proposing a fix.
+- For performance complaints, collect evidence before optimizing.
+
+## Design handoff rules
+- If Figma MCP is available, use it for spacing, typography, variables, icons, assets, and component references.
+- Do not eyeball measurements from screenshots when structured design data is available.
+- If the design conflicts with the codebase patterns, follow the existing system and note the mismatch.
+
+## Accessibility rules
+- New or changed interactive elements must be keyboard accessible.
+- Inputs must have labels, errors must be announced clearly, and dialogs must manage focus correctly.
+- Check contrast when styles change.
+
+## Communication
+- State assumptions briefly.
+- Flag uncertainty instead of guessing.
+- When blocked by missing docs/design/context, say exactly what is missing.

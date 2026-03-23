@@ -8,7 +8,6 @@ interface SimilarCarsProps {
 }
 
 export function SimilarCars({ currentVehicle }: SimilarCarsProps) {
-  // Get similar cars (same make or similar price range, excluding current)
   const similarCars = vehicles
     .filter(v => v.id !== currentVehicle.id)
     .filter(v => 
@@ -22,24 +21,26 @@ export function SimilarCars({ currentVehicle }: SimilarCarsProps) {
   }
 
   return (
-    <section className="mt-10">
-      <div className="flex items-center justify-between mb-5">
-        <h2 className="text-xl font-semibold text-foreground">
-          Похожие автомобили
-        </h2>
-        <Link 
-          href="#" 
-          className="flex items-center gap-1 text-sm text-teal-accent hover:text-teal-dark transition-colors"
-        >
-          <span>Смотреть все</span>
-          <ChevronRight className="w-4 h-4" />
-        </Link>
-      </div>
-      
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        {similarCars.map((vehicle) => (
-          <VehicleCard key={vehicle.id} vehicle={vehicle} />
-        ))}
+    <section className="mt-12 sm:mt-14">
+      <div className="bg-card dark:bg-surface-panel rounded-2xl border-2 border-border p-6 sm:p-8 shadow-lg">
+        <div className="flex items-center justify-between mb-8">
+          <h2 className="text-2xl sm:text-3xl font-bold font-display text-foreground tracking-[-0.02em]">
+            Похожие автомобили
+          </h2>
+          <Link
+            href="#"
+            className="flex items-center gap-2 text-base font-semibold text-teal-accent hover:text-teal-dark dark:hover:text-seafoam transition-colors group"
+          >
+            <span>Смотреть все</span>
+            <ChevronRight className="w-5 h-5 transition-transform group-hover:translate-x-0.5" />
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-5">
+          {similarCars.map((vehicle) => (
+            <VehicleCard key={vehicle.id} vehicle={vehicle} variant="compact" />
+          ))}
+        </div>
       </div>
     </section>
   );

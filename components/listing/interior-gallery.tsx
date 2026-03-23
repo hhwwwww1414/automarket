@@ -47,8 +47,8 @@ export function InteriorGallery({ images }: InteriorGalleryProps) {
 
   return (
     <>
-      <div className="bg-card rounded-lg border border-border p-4">
-        <h3 className="font-semibold text-foreground mb-3">Фотографии салона</h3>
+      <div className="bg-card dark:bg-surface-elevated rounded-xl border-2 border-border p-5 sm:p-6 shadow-lg">
+        <h3 className="font-display font-semibold text-foreground mb-4 text-lg">Фотографии салона</h3>
         <div className="grid grid-cols-3 gap-2">
           {images.map((src, i) => (
             <button
@@ -66,7 +66,7 @@ export function InteriorGallery({ images }: InteriorGalleryProps) {
             </button>
           ))}
         </div>
-        <p className="mt-2 text-xs text-muted-foreground">{images.length} фотографий</p>
+        <p className="mt-3 text-sm text-muted-foreground font-medium">{images.length} фотографий</p>
       </div>
 
       {/* Lightbox */}

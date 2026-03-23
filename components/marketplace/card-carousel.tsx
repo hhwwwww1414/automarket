@@ -122,11 +122,11 @@ export function CardCarousel({
         </div>
       )}
 
-      {/* Prev arrow */}
+      {/* Prev arrow — всегда видимы для кликабельности */}
       <button
         onClick={prev}
         aria-label="Предыдущее"
-        className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 bg-black/40 hover:bg-black/65 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
+        className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/40 hover:bg-black/65 rounded-full flex items-center justify-center opacity-60 hover:opacity-100 transition-opacity z-20"
       >
         <ChevronLeft className="w-4 h-4 text-white" />
       </button>
@@ -135,13 +135,13 @@ export function CardCarousel({
       <button
         onClick={next}
         aria-label="Следующее"
-        className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 bg-black/40 hover:bg-black/65 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
+        className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/40 hover:bg-black/65 rounded-full flex items-center justify-center opacity-60 hover:opacity-100 transition-opacity z-20"
       >
         <ChevronRight className="w-4 h-4 text-white" />
       </button>
 
       {/* Dot indicators */}
-      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 z-10">
+      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 z-20">
         {Array.from({ length: totalSlides }).map((_, i) => {
           const isVideo = videoUrl !== undefined && i === images.length;
           const isActive = i === current;

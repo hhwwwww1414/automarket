@@ -21,7 +21,6 @@ export function VinReport({ vehicle }: VinReportProps) {
     },
   ];
 
-  // Close on Escape
   useEffect(() => {
     if (!isModalOpen) return;
     const handler = (e: KeyboardEvent) => {
@@ -31,7 +30,6 @@ export function VinReport({ vehicle }: VinReportProps) {
     return () => document.removeEventListener('keydown', handler);
   }, [isModalOpen]);
 
-  // Lock scroll
   useEffect(() => {
     document.body.style.overflow = isModalOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
@@ -39,83 +37,79 @@ export function VinReport({ vehicle }: VinReportProps) {
 
   return (
     <>
-      <div className="bg-card rounded-lg border border-border p-4">
-        <div className="flex items-center gap-2 mb-4">
-          <ShieldCheck className="w-5 h-5 text-teal-accent" />
-          <h3 className="font-semibold text-foreground">Отчёт по VIN-коду</h3>
-        </div>
+      <div className="relative bg-card dark:bg-surface-elevated rounded-2xl border-2 border-border p-6 sm:p-7 shadow-lg overflow-hidden">
+        <div className="relative">
+          <div className="flex items-center gap-3 mb-4">
+            <ShieldCheck className="w-6 h-6 text-teal-accent" />
+            <h3 className="font-display font-semibold text-foreground text-lg sm:text-xl tracking-[-0.01em]">Отчёт по VIN-коду</h3>
+          </div>
 
-        {/* Masked VIN */}
-        <div className="bg-muted rounded-lg px-3 py-2 mb-4">
-          <p className="text-sm text-muted-foreground">VIN</p>
-          <p className="font-mono text-foreground">{vehicle.vin}</p>
-        </div>
+          <div className="bg-muted dark:bg-surface-3 rounded-xl px-4 py-3 mb-4">
+            <p className="text-sm text-muted-foreground mb-1 font-medium">VIN</p>
+            <p className="font-mono text-base font-semibold text-foreground">{vehicle.vin}</p>
+          </div>
 
-        {/* Check Items */}
-        <div className="space-y-2.5">
-          {checks.map((check, index) => (
-            <div key={index} className="flex items-center gap-2 text-sm">
-              {check.status === 'ok' ? (
-                <CheckCircle className="w-4 h-4 text-success flex-shrink-0" />
-              ) : (
-                <AlertCircle className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-              )}
-              <span className={check.status === 'ok' ? 'text-foreground' : 'text-muted-foreground'}>
-                {check.label}
-              </span>
-            </div>
-          ))}
-        </div>
+          <div className="space-y-3">
+            {checks.map((check, index) => (
+              <div key={index} className="flex items-center gap-3 text-base">
+                {check.status === 'ok' ? (
+                  <CheckCircle className="w-5 h-5 text-success flex-shrink-0" />
+                ) : (
+                  <AlertCircle className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                )}
+                <span className={check.status === 'ok' ? 'text-foreground font-medium' : 'text-muted-foreground font-medium'}>
+                  {check.label}
+                </span>
+              </div>
+            ))}
+          </div>
 
-        {/* Report Button */}
-        <button
-          onClick={() => vehicle.reportUrl && setIsModalOpen(true)}
-          disabled={!vehicle.reportUrl}
-          className="w-full mt-4 py-2 text-sm text-teal-accent hover:text-teal-dark border border-teal-accent/30 rounded-lg hover:bg-teal-accent/5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          Получить полный отчёт
-        </button>
+          <button
+            onClick={() => vehicle.reportUrl && setIsModalOpen(true)}
+            disabled={!vehicle.reportUrl}
+            className="w-full mt-6 py-3.5 text-base font-semibold text-teal-accent hover:text-teal-dark dark:hover:text-seafoam border-2 border-teal-accent/40 rounded-xl hover:bg-teal-accent/10 dark:hover:bg-teal-accent/15 transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+          >
+            Получить полный отчёт
+          </button>
+        </div>
       </div>
 
-      {/* PDF Modal */}
       {isModalOpen && vehicle.reportUrl && (
         <div
-          className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
           onClick={() => setIsModalOpen(false)}
         >
           <div
-            className="relative bg-card rounded-xl shadow-2xl w-full max-w-4xl flex flex-col"
+            className="relative bg-card dark:bg-surface-elevated rounded-2xl shadow-2xl w-full max-w-4xl flex flex-col border-2 border-border"
             style={{ height: 'min(90vh, 860px)' }}
             onClick={e => e.stopPropagation()}
           >
-            {/* Modal header */}
-            <div className="flex items-center justify-between px-5 py-3 border-b border-border shrink-0">
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-teal-accent" />
-                <h2 className="font-semibold text-foreground">Полный отчёт</h2>
+            <div className="flex items-center justify-between px-6 py-4 border-b-2 border-border shrink-0">
+              <div className="flex items-center gap-3">
+                <ShieldCheck className="w-6 h-6 text-teal-accent" />
+                <h2 className="font-display font-semibold text-foreground text-lg">Полный отчёт</h2>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <a
                   href={vehicle.reportUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  className="flex items-center gap-2 text-base text-muted-foreground hover:text-foreground transition-colors font-medium"
                 >
-                  <ExternalLink className="w-3.5 h-3.5" />
+                  <ExternalLink className="w-4 h-4" />
                   Открыть в новой вкладке
                 </a>
                 <button
                   onClick={() => setIsModalOpen(false)}
                   aria-label="Закрыть"
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  className="w-10 h-10 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
             </div>
 
-            {/* PDF viewer */}
-            <div className="flex-1 min-h-0 rounded-b-xl overflow-hidden">
+            <div className="flex-1 min-h-0 rounded-b-2xl overflow-hidden">
               <iframe
                 src={`${vehicle.reportUrl}#toolbar=1&navpanes=0`}
                 className="w-full h-full border-0"
