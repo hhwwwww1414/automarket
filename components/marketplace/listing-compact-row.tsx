@@ -28,8 +28,8 @@ export function ListingCompactRow({ listing, priority = false, className }: List
     <Link
       href={`/listing/${listing.id}`}
       className={cn(
-        // Structure
-        'group relative block rounded-xl border overflow-hidden',
+        // card-interactive-subtle → lower opacity press (compact/dense mode)
+        'card-interactive-subtle relative block rounded-xl border overflow-hidden',
         // Default
         'border-border bg-card/95 dark:bg-surface-elevated/90 backdrop-blur-sm',
         // Hover
@@ -39,15 +39,10 @@ export function ListingCompactRow({ listing, priority = false, className }: List
         className
       )}
     >
-      {/* Carbon press overlay — lighter than card mode */}
+      {/* Carbon press overlay — subtle intensity, pure CSS activation */}
       <span
         aria-hidden="true"
-        className={cn(
-          'card-press-carbon',
-          'absolute inset-0 rounded-[inherit] pointer-events-none z-[1]',
-          'opacity-0 group-active:opacity-[0.06] dark:group-active:opacity-[0.10]',
-          'transition-opacity duration-75 ease-in group-active:duration-[40ms]',
-        )}
+        className="card-press-carbon absolute inset-0 rounded-[inherit] pointer-events-none z-[1] opacity-0 transition-opacity duration-[180ms] ease-out"
       />
 
       {/* Content row — z-[2] keeps it above the overlay */}

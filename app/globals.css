@@ -154,9 +154,22 @@
 
 /* ─── Card Interactive Carbon System ─────────────────────────────────────────
    Teal-tinted carbon weave for card pressed/active state.
-   Palette specified: #3FAFA5 (base) / #5FC2B9 (lighter) / #2E978E (slit/groove)
-   Only meaningful in dark mode; light mode gets a subtle desaturated tint.
+   Palette: #3FAFA5 (base) / #5FC2B9 (lighter) / #2E978E (slit/groove)
+
+   ARCHITECTURE
+   ─────────────────────────────────────────────────────────────────────────
+   .card-interactive       parent element (Link/button) — triggers :active
+   .card-interactive-subtle  same but lower intensity (compact / dense rows)
+   .card-press-carbon      absolutely-positioned overlay span inside the card
+                           z-index: 1 (above bg, below content z-index: 2)
+                           opacity: 0 by default
+                           transitions in on :active, out on release
+
+   Pure CSS — NO dependency on Tailwind group-active: variant generation.
+   This works reliably in Tailwind v4 CSS-first mode.
 ───────────────────────────────────────────────────────────────────────────── */
+
+/* ── Background pattern ──────────────────────────────────────────────────── */
 .card-press-carbon {
   background-color: #2a7470;
   background-size: 16px 16px;
@@ -186,9 +199,31 @@
   filter: contrast(1.04) saturate(0.72) brightness(0.56);
 }
 
-/* Light-mode override — desaturate and lighten so the overlay stays readable */
+/* Light-mode: desaturate + brighten so overlay stays subtle on white cards */
 html:not(.dark) .card-press-carbon {
   filter: contrast(0.85) saturate(0.35) brightness(2.8);
+}
+
+/* ── Active state activation — pure CSS, no Tailwind variant needed ───────── */
+
+/* Cards / WantedCards / form scenario cards — standard intensity */
+.card-interactive:active .card-press-carbon {
+  opacity: 0.08;
+  transition-duration: 50ms;
+}
+.dark .card-interactive:active .card-press-carbon {
+  opacity: 0.14;
+  transition-duration: 50ms;
+}
+
+/* Compact/dense rows — subtler, readability first */
+.card-interactive-subtle:active .card-press-carbon {
+  opacity: 0.055;
+  transition-duration: 50ms;
+}
+.dark .card-interactive-subtle:active .card-press-carbon {
+  opacity: 0.10;
+  transition-duration: 50ms;
 }
 
 .carbon-fiber-center {

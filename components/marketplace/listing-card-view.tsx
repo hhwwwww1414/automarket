@@ -32,30 +32,25 @@ export function ListingCardView({ listing, priority = false, className }: Listin
     <Link
       href={`/listing/${listing.id}`}
       className={cn(
-        // Structure
-        'group relative block rounded-xl border overflow-hidden',
+        // Structure — card-interactive triggers the CSS :active rule for the carbon overlay
+        'card-interactive relative block rounded-xl border overflow-hidden',
         // Default
         'border-border bg-card/95 dark:bg-surface-elevated/90 backdrop-blur-sm',
         // Hover — border brightens, bg slightly elevated
-        'hover:border-teal-accent/35 dark:hover:bg-surface-elevated transition-[border-color,background-color,box-shadow] duration-200',
-        // Focus-visible — keyboard-accessible ring, no carbon
+        'hover:border-teal-accent/35 dark:hover:bg-surface-elevated transition-[border-color,background-color] duration-200',
+        // Focus-visible — keyboard ring only, no carbon
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background',
         className
       )}
     >
       {/* ── Carbon press overlay ──────────────────────────────────────────
-          z-[1] sits between card background (below) and content z-[2].
-          Opacity is 0 by default; activates on :active via group-active.
-          Duration-75 for fast "snap in" feel; fades out at 200ms.
+          z-[1]: above card bg, below content z-[2].
+          opacity: 0 default → .card-interactive:active rule bumps it up.
+          180ms ease-out fade so the pattern dissolves smoothly on release.
        ────────────────────────────────────────────────────────────────── */}
       <span
         aria-hidden="true"
-        className={cn(
-          'card-press-carbon',
-          'absolute inset-0 rounded-[inherit] pointer-events-none z-[1]',
-          'opacity-0 group-active:opacity-[0.08] dark:group-active:opacity-[0.14]',
-          'transition-opacity duration-75 ease-in group-active:duration-[40ms]',
-        )}
+        className="card-press-carbon absolute inset-0 rounded-[inherit] pointer-events-none z-[1] opacity-0 transition-opacity duration-[180ms] ease-out"
       />
 
       {/* Content — sits on z-[2], always above the overlay */}
