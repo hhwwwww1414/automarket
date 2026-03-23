@@ -205,25 +205,31 @@ html:not(.dark) .card-press-carbon {
 }
 
 /* ── Active state activation — pure CSS, no Tailwind variant needed ───────── */
+/*
+   transition-duration: 0ms  →  snap-in is instant (visible within the short
+                                 :active window of a link click, ~80–150ms)
+   The fade-OUT uses duration-[220ms] set on the element via Tailwind,
+   so the overlay dissolves smoothly after the finger/mouse is released.
+*/
 
 /* Cards / WantedCards / form scenario cards — standard intensity */
 .card-interactive:active .card-press-carbon {
-  opacity: 0.08;
-  transition-duration: 50ms;
+  opacity: 0.10;          /* light mode — subtle teal tint */
+  transition-duration: 0ms;
 }
 .dark .card-interactive:active .card-press-carbon {
-  opacity: 0.14;
-  transition-duration: 50ms;
+  opacity: 0.20;          /* dark mode — clearly visible teal weave */
+  transition-duration: 0ms;
 }
 
 /* Compact/dense rows — subtler, readability first */
 .card-interactive-subtle:active .card-press-carbon {
-  opacity: 0.055;
-  transition-duration: 50ms;
+  opacity: 0.07;
+  transition-duration: 0ms;
 }
 .dark .card-interactive-subtle:active .card-press-carbon {
-  opacity: 0.10;
-  transition-duration: 50ms;
+  opacity: 0.14;
+  transition-duration: 0ms;
 }
 
 .carbon-fiber-center {
