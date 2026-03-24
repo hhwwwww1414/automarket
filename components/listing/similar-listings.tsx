@@ -1,24 +1,14 @@
-import { saleListings } from '@/lib/marketplace-data';
 import { ListingCompactRow } from '@/components/marketplace/listing-compact-row';
 import type { SaleListing } from '@/lib/types';
 import { ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 
 interface SimilarListingsProps {
-  currentListing: SaleListing;
+  listings: SaleListing[];
 }
 
-export function SimilarListings({ currentListing }: SimilarListingsProps) {
-  const similar = saleListings
-    .filter((l) => l.id !== currentListing.id)
-    .filter(
-      (l) =>
-        l.make === currentListing.make ||
-        (l.price >= currentListing.price * 0.7 && l.price <= currentListing.price * 1.3)
-    )
-    .slice(0, 6);
-
-  if (similar.length === 0) return null;
+export function SimilarListings({ listings }: SimilarListingsProps) {
+  if (listings.length === 0) return null;
 
   return (
     <section className="mt-10">
@@ -33,7 +23,7 @@ export function SimilarListings({ currentListing }: SimilarListingsProps) {
         </Link>
       </div>
       <div className="space-y-2">
-        {similar.map((listing) => (
+        {listings.map((listing) => (
           <ListingCompactRow key={listing.id} listing={listing} />
         ))}
       </div>

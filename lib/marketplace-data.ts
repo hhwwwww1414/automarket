@@ -462,6 +462,8 @@ export interface Vehicle {
 }
 
 export function saleListingToVehicle(sl: SaleListing): Vehicle {
+  const images = sl.images.filter(Boolean);
+
   return {
     id: sl.id,
     make: sl.make,
@@ -470,8 +472,8 @@ export function saleListingToVehicle(sl: SaleListing): Vehicle {
     price: sl.price,
     mileage: sl.mileage,
     city: sl.city,
-    imageUrl: sl.images[0] ?? '',
-    images: sl.images,
+    imageUrl: images[0] ?? '',
+    images,
     videoUrl: sl.videoUrl,
     interiorImages: sl.interiorImages,
     reportUrl: sl.reportUrl,

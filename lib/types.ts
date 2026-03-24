@@ -1,8 +1,5 @@
-/**
- * B2B Автомаркет — типы сущностей для профессионального авторынка
- */
+import type { ListingStatusValue } from '@/lib/listing-status';
 
-// === SaleListing: объявление о продаже ===
 export type SellerType = 'owner' | 'flip' | 'broker' | 'commission';
 export type ResourceStatus = 'not_listed' | 'on_resources' | 'pre_resources';
 export type PtsType = 'original' | 'duplicate' | 'epts';
@@ -16,22 +13,20 @@ export interface SaleListing {
   generation?: string;
   year: number;
   price: number;
-  priceInHand?: number;      // цена в руки
-  priceOnResources?: number; // цена на ресурсах
+  priceInHand?: number;
+  priceOnResources?: number;
   city: string;
   images: string[];
   videoUrl?: string;
   interiorImages?: string[];
   reportUrl?: string;
   vin?: string;
-  // Техника
   engine: string;
   power: number;
   transmission: string;
   drive: string;
   bodyType: string;
   mileage: number;
-  // История
   owners: number;
   registrations?: number;
   ptsType?: PtsType;
@@ -43,27 +38,27 @@ export interface SaleListing {
   taxi?: boolean;
   carsharing?: boolean;
   keysCount?: number;
-  // Состояние
   conditionNote?: string;
   needsInvestment?: boolean;
   glassOriginal?: boolean;
-  // Сделка
   trade: boolean;
   kickback?: boolean;
   resourceStatus: ResourceStatus;
   sellerType: SellerType;
   inspectionCity?: string;
-  // Доп
   color: string;
   steering: string;
   trim?: string;
   description: string;
   seller: SellerProfile;
+  status?: ListingStatusValue;
+  moderationNote?: string;
+  publishedAt?: string;
+  ownerUserId?: string;
   createdAt: string;
   updatedAt?: string;
 }
 
-// === WantedListing: запрос в подбор ===
 export interface WantedListing {
   id: string;
   type: 'wanted';
@@ -82,10 +77,13 @@ export interface WantedListing {
   comment?: string;
   contact: string;
   author: SellerProfile;
+  status?: ListingStatusValue;
+  moderationNote?: string;
+  publishedAt?: string;
+  ownerUserId?: string;
   createdAt: string;
 }
 
-// === SellerProfile ===
 export interface SellerProfile {
   id: string;
   name: string;
@@ -95,7 +93,6 @@ export interface SellerProfile {
   phone?: string;
 }
 
-// === VehicleReport ===
 export interface VehicleReport {
   vin: string;
   avtotekaStatus?: AvtotekaStatus;
@@ -105,7 +102,6 @@ export interface VehicleReport {
   ptsMatch?: boolean;
 }
 
-// === DealMeta (в блоке сделки) ===
 export interface DealMeta {
   price: number;
   priceInHand?: number;

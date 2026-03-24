@@ -1,15 +1,19 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { MarketplaceHeader } from '@/components/marketplace/header';
+import { CarbonFiberBackground } from '@/components/layout/carbon-fiber-background';
 import { VehicleGallery } from '@/components/listing/vehicle-gallery';
 import { InteriorGallery } from '@/components/listing/interior-gallery';
+import { ListingStatusBadge } from '@/components/listing/listing-status-badge';
 import { DealBlock } from '@/components/listing/deal-block';
 import { VinReport } from '@/components/listing/vin-report';
 import { SimilarListings } from '@/components/listing/similar-listings';
 import {
-  saleListings,
   saleListingToVehicle,
 } from '@/lib/marketplace-data';
+import { LISTING_STATUS_PANEL_CLASSES, getListingStatusLabel } from '@/lib/listing-status';
+import { getSessionUser } from '@/lib/server/auth';
+import { getSaleListingById, getSimilarSaleListings } from '@/lib/server/marketplace';
 import {
   Palette,
   Wrench,
@@ -28,6 +32,19 @@ import { cn } from '@/lib/utils';
 
 interface ListingPageProps {
   params: Promise<{ id: string }>;
+}
+
+export const dynamic = 'force-dynamic';
+
+function getContactHref(contact: string): string {
+  const trimmed = contact.trim();
+  if (trimmed.startsWith('tg/@')) {
+    return `https://t.me/${trimmed.slice(4)}`;
+  }
+  if (trimmed.startsWith('@')) {
+    return `https://t.me/${trimmed.slice(1)}`;
+  }
+  return `tel:${trimmed.replace(/\D/g, '')}`;
 }
 
 function SectionCard({ title, icon: Icon, children, className }: {
@@ -75,19 +92,22 @@ function StatusBadge({ ok, label }: { ok: boolean; label: string }) {
 
 export default async function ListingPage({ params }: ListingPageProps) {
   const { id } = await params;
-  const listing = saleListings.find((l) => l.id === id);
+  const sessionUser = await getSessionUser();
+  const listing = await getSaleListingById(id, sessionUser ? { userId: sessionUser.id, role: sessionUser.role } : undefined);
 
   if (!listing) {
     notFound();
   }
 
   const vehicle = saleListingToVehicle(listing);
+  const similarListings = await getSimilarSaleListings(listing);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="relative isolate min-h-screen bg-background">
+      <CarbonFiberBackground variant="tiffany" className="top-14 inset-x-0 bottom-0" />
       <MarketplaceHeader />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {/* Breadcrumb */}
         <nav
           className="text-sm text-muted-foreground mb-4 flex flex-wrap items-center gap-x-1 gap-y-1"
@@ -99,6 +119,18 @@ export default async function ListingPage({ params }: ListingPageProps) {
           <span>/</span>
           <span className="text-foreground font-medium">{listing.make} {listing.model}</span>
         </nav>
+
+        {listing.status && listing.status !== 'PUBLISHED' ? (
+          <div className={cn('mb-4 rounded-2xl border px-4 py-3', LISTING_STATUS_PANEL_CLASSES[listing.status])}>
+            <div className="flex flex-wrap items-center gap-3">
+              <ListingStatusBadge status={listing.status} />
+              <p className="text-sm">
+                Карточка доступна только владельцу и модераторам до публикации. Текущий статус: {getListingStatusLabel(listing.status)}.
+              </p>
+            </div>
+            {listing.moderationNote ? <p className="mt-2 text-sm text-muted-foreground">{listing.moderationNote}</p> : null}
+          </div>
+        ) : null}
 
         {/* Title */}
         <div className="mb-6">
@@ -230,7 +262,7 @@ export default async function ListingPage({ params }: ListingPageProps) {
 
             {/* Contacts */}
             <SectionCard title="Продавец" icon={Phone}>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
                   <div className="font-semibold text-foreground">{listing.seller.name}</div>
                   <div className="text-xs text-muted-foreground mt-0.5">
@@ -244,8 +276,10 @@ export default async function ListingPage({ params }: ListingPageProps) {
                 </div>
                 {listing.seller.phone && (
                   <a
-                    href={`tel:${listing.seller.phone.replace(/\D/g, '')}`}
-                    className="text-teal-accent text-sm font-medium hover:underline"
+                    href={getContactHref(listing.seller.phone)}
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-border text-teal-accent text-sm font-medium hover:bg-muted/40 transition-colors sm:px-3 sm:py-1.5 sm:border-0 sm:bg-transparent sm:hover:bg-transparent sm:hover:underline sm:p-0"
+                    target={listing.seller.phone.includes('@') ? '_blank' : undefined}
+                    rel={listing.seller.phone.includes('@') ? 'noopener noreferrer' : undefined}
                   >
                     {listing.seller.phone}
                   </a>
@@ -260,12 +294,12 @@ export default async function ListingPage({ params }: ListingPageProps) {
           </div>
         </div>
 
-        <SimilarListings currentListing={listing} />
+        <SimilarListings listings={similarListings} />
       </main>
 
-      <footer className="mt-12 pt-6 border-t border-border">
+      <footer className="relative z-10 mt-12 pt-6 border-t border-border">
         <div className="max-w-7xl mx-auto px-4 flex justify-between items-center">
-          <span className="font-semibold text-sm">АвтоСделка</span>
+          <span className="font-semibold text-sm">vin2win</span>
           <span className="text-xs text-muted-foreground">© 2025</span>
         </div>
       </footer>

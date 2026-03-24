@@ -22,7 +22,7 @@ yarn-error.log*
 pnpm-debug.log*
 *.log
 
-# env files
+# env files — содержат секреты, никогда не коммитить
 .env
 .env.local
 .env.development.local
@@ -30,14 +30,29 @@ pnpm-debug.log*
 .env.production.local
 .env*.local
 
+# prisma generated client (генерируется командой prisma generate)
+prisma/generated/
+
 # tests / coverage
 coverage/
 
-# caches / editor / os
+# caches / typescript build info
 *.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# cursor IDE — локальные настройки редактора
+.cursor/
+
+# os / editor
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
+
+# storybook
 *storybook.log
 storybook-static
+.storybook/
+
+# deploy artifacts
+deploy.zip

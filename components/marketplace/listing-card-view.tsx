@@ -54,15 +54,15 @@ export function ListingCardView({ listing, priority = false, className }: Listin
       />
 
       {/* Content — sits on z-[2], always above the overlay */}
-      <div className="relative z-[2] flex min-h-0 items-stretch">
+      <div className="relative z-[2] flex flex-col sm:flex-row min-h-0 sm:items-stretch">
         {/* Photo col */}
-        <div className="relative w-[160px] sm:w-[200px] lg:w-[240px] flex-shrink-0">
+        <div className="relative w-full sm:w-[200px] lg:w-[240px] sm:flex-shrink-0 aspect-[16/9] sm:aspect-auto">
           <ListingImageCarousel
             images={listing.images}
             alt={title}
             size="card"
             priority={priority}
-            className="w-full h-full rounded-l-xl"
+            className="w-full h-full rounded-t-xl sm:rounded-t-none sm:rounded-l-xl"
           />
           {listing.resourceStatus === 'on_resources' && (
             <div className="absolute top-2 left-2 px-2 py-1 bg-teal-accent/95 text-[#09090B] text-[10px] font-semibold rounded-md shadow-sm z-10">
@@ -77,7 +77,7 @@ export function ListingCardView({ listing, priority = false, className }: Listin
         </div>
 
         {/* Main info */}
-        <div className="flex-1 min-w-0 flex flex-col p-4 gap-2.5">
+        <div className="flex-1 min-w-0 flex flex-col p-3 sm:p-4 gap-2 sm:gap-2.5">
           <h3 className="font-display font-semibold text-foreground text-base leading-tight line-clamp-2">
             {title}
           </h3>
@@ -121,10 +121,15 @@ export function ListingCardView({ listing, priority = false, className }: Listin
 
           {/* Chips */}
           <ListingChipsBlock chips={badges} variant="card" maxCount={6} className="mt-auto pt-0.5" />
+
+          {/* Status — mobile only, shown inline at the bottom of content */}
+          <div className="sm:hidden pt-2 border-t border-border/40">
+            <ListingStatusBlock listing={listing} layout="horizontal" size="sm" />
+          </div>
         </div>
 
-        {/* Status col */}
-        <div className="flex flex-col items-end justify-between p-4 pl-0 border-l border-border/40 shrink-0 min-w-[88px]">
+        {/* Status col — desktop only */}
+        <div className="hidden sm:flex flex-col items-end justify-between p-4 pl-0 border-l border-border/40 shrink-0 min-w-[88px]">
           <ListingStatusBlock listing={listing} layout="vertical" />
         </div>
       </div>

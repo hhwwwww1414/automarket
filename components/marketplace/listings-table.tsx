@@ -90,21 +90,28 @@ function ListingTableRow({ listing, priority = false }: ListingTableRowProps) {
   const sellerLabel = SELLER_LABELS[listing.sellerType] ?? listing.sellerType;
   const onResources = listing.resourceStatus === 'on_resources';
   const engineTrans = `${listing.engine} / ${listing.transmission}`;
+  const coverImage = listing.images.find(Boolean);
 
   return (
       <tr className="border-b border-border/50 hover:bg-muted/40 dark:hover:bg-white/[0.03] active:bg-[rgba(63,175,165,0.05)] dark:active:bg-[rgba(63,175,165,0.07)] transition-colors duration-150">
       <td className={`${CELL_CLASS} w-[72px]`}>
         <Link href={`/listing/${listing.id}`} className="block">
           <div className="w-14 h-10 rounded-md overflow-hidden bg-muted flex-shrink-0">
-            <Image
-              src={listing.images[0] ?? ''}
-              alt={title}
-              width={56}
-              height={40}
-              className="w-full h-full object-cover"
-              sizes="56px"
-              priority={priority}
-            />
+            {coverImage ? (
+              <Image
+                src={coverImage}
+                alt={title}
+                width={56}
+                height={40}
+                className="w-full h-full object-cover"
+                sizes="56px"
+                priority={priority}
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-[10px] text-muted-foreground">
+                Без фото
+              </div>
+            )}
           </div>
         </Link>
       </td>

@@ -1,1103 +1,409 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { MarketplaceHeader } from '@/components/marketplace/header';
 import { Button } from '@/components/ui/button';
+import type { ListingStatusValue } from '@/lib/listing-status';
 import { cn } from '@/lib/utils';
-import {
-  ChevronLeft,
-  ChevronRight,
-  Car,
-  Wrench,
-  FileText,
-  ShieldCheck,
-  Handshake,
-  Camera,
-  Search,
-  Check,
-  AlertCircle,
-} from 'lucide-react';
-
-// ─── Scenario Selector ───────────────────────────────────────────────────────
+import { Car, Check, ChevronLeft, ChevronRight, Search, Upload, Video, X } from 'lucide-react';
 
 type Scenario = 'sale' | 'wanted';
+type SaleStep = 1 | 2 | 3 | 4 | 5 | 6;
+type SubmissionMode = 'DRAFT' | 'PENDING';
 
-// ─── Sale Steps ──────────────────────────────────────────────────────────────
+type PhotoItem = { file: File; url: string };
+type VideoItem = { file: File; name: string; size: string };
+type SessionUser = { name: string; phone?: string };
 
-const SALE_STEPS = [
-  { id: 1, title: 'База', desc: 'Марка, модель, год, город, VIN', icon: Car },
-  { id: 2, title: 'Техника', desc: 'Мотор, КПП, привод, пробег', icon: Wrench },
-  { id: 3, title: 'История', desc: 'Владельцы, ПТС, окрасы, ДТП', icon: FileText },
-  { id: 4, title: 'Состояние', desc: 'Техника, ключи, стёкла, вложения', icon: ShieldCheck },
-  { id: 5, title: 'Сделка', desc: 'Цена, торг, ресурсы, тип', icon: Handshake },
-  { id: 6, title: 'Фото', desc: 'Фотографии и описание', icon: Camera },
+type SaleData = {
+  sellerName: string; contact: string; make: string; model: string; generation: string; year: string; vin: string; city: string;
+  price: string; priceInHand: string; priceOnResources: string; bodyType: string; engine: string; power: string; transmission: string;
+  drive: string; mileage: string; steering: string; color: string; trim: string; owners: string; registrations: string; keysCount: string;
+  ptsType: string; paintCount: string; paintedElements: string; notTaxi: boolean; notCarsharing: boolean; avtotekaGreen: boolean;
+  noRestrictions: boolean; techOk: boolean; glassOriginal: boolean; noInvestment: boolean; investmentNote: string; trade: boolean;
+  kickback: boolean; sellerType: string; resourceStatus: string; videoUrl: string; description: string;
+};
+
+type WantedData = {
+  authorName: string; contact: string; models: string; budgetMin: string; budgetMax: string; yearFrom: string; mileageMax: string;
+  engine: string; transmission: string; drive: string; ownersMax: string; paintAllowed: boolean; region: string; comment: string;
+  notTaxi: boolean; notCarsharing: boolean; notSalon: boolean; notChina: boolean; ptsOriginalOnly: boolean; ownerOnly: boolean; sendAvtoteka: boolean;
+};
+
+const saleSteps: { id: SaleStep; title: string }[] = [
+  { id: 1, title: 'База' }, { id: 2, title: 'Техника' }, { id: 3, title: 'История' },
+  { id: 4, title: 'Состояние' }, { id: 5, title: 'Сделка' }, { id: 6, title: 'Фото' },
 ];
 
-// ─── Field components ────────────────────────────────────────────────────────
+const saleDefaults: SaleData = {
+  sellerName: '', contact: '', make: '', model: '', generation: '', year: '', vin: '', city: '',
+  price: '', priceInHand: '', priceOnResources: '', bodyType: '', engine: '', power: '', transmission: 'АКПП',
+  drive: 'Передний', mileage: '', steering: 'Левый', color: '', trim: '', owners: '', registrations: '', keysCount: '2',
+  ptsType: 'original', paintCount: '0', paintedElements: '', notTaxi: true, notCarsharing: true, avtotekaGreen: false,
+  noRestrictions: false, techOk: true, glassOriginal: false, noInvestment: true, investmentNote: '', trade: false,
+  kickback: false, sellerType: 'owner', resourceStatus: 'not_listed', videoUrl: '', description: '',
+};
 
-function FieldLabel({ children, required }: { children: React.ReactNode; required?: boolean }) {
-  return (
-    <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-      {children}
-      {required && <span className="text-destructive ml-0.5">*</span>}
-    </label>
-  );
+const wantedDefaults: WantedData = {
+  authorName: '', contact: '', models: '', budgetMin: '', budgetMax: '', yearFrom: '', mileageMax: '',
+  engine: '', transmission: 'АКПП', drive: 'Любой', ownersMax: '', paintAllowed: false, region: '', comment: '',
+  notTaxi: true, notCarsharing: true, notSalon: false, notChina: false, ptsOriginalOnly: false, ownerOnly: false, sendAvtoteka: false,
+};
+
+const inputClass = 'w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-teal-accent/60 focus:ring-2 focus:ring-teal-accent/30';
+
+function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
+  return <label className="block space-y-1.5"><span className="text-xs font-medium text-muted-foreground">{label}{required ? <span className="ml-0.5 text-destructive">*</span> : null}</span>{children}</label>;
 }
 
-function TextInput({
-  placeholder,
-  value,
-  onChange,
-  type = 'text',
-}: {
-  placeholder?: string;
-  value: string;
-  onChange: (v: string) => void;
-  type?: string;
-}) {
+function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
   return (
-    <input
-      type={type}
-      placeholder={placeholder}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className={cn(
-        'w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground',
-        'placeholder:text-muted-foreground/60',
-        'focus:outline-none focus:ring-2 focus:ring-teal-accent/40 focus:border-teal-accent/60',
-        'transition-colors'
-      )}
-    />
-  );
-}
-
-function SelectInput({
-  options,
-  value,
-  onChange,
-  placeholder,
-}: {
-  options: string[];
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-}) {
-  return (
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className={cn(
-        'w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground',
-        'focus:outline-none focus:ring-2 focus:ring-teal-accent/40 focus:border-teal-accent/60',
-        'transition-colors',
-        !value && 'text-muted-foreground/70'
-      )}
-    >
-      {placeholder && (
-        <option value="" disabled>
-          {placeholder}
-        </option>
-      )}
-      {options.map((o) => (
-        <option key={o} value={o}>
-          {o}
-        </option>
-      ))}
-    </select>
-  );
-}
-
-function ToggleGroup({
-  options,
-  value,
-  onChange,
-}: {
-  options: { value: string; label: string }[];
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <div className="flex flex-wrap gap-2">
-      {options.map((o) => (
-        <button
-          key={o.value}
-          type="button"
-          onClick={() => onChange(o.value)}
-          className={cn(
-            'px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors',
-            value === o.value
-              ? 'bg-[var(--accent-bg-soft)] text-teal-accent border-[var(--accent-border-soft)]'
-              : 'bg-card border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground/30'
-          )}
-        >
-          {o.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function CheckToggle({
-  label,
-  checked,
-  onChange,
-  hint,
-}: {
-  label: string;
-  checked: boolean;
-  onChange: (v: boolean) => void;
-  hint?: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={() => onChange(!checked)}
-      className={cn(
-        'flex items-center gap-2.5 w-full text-left px-3 py-2.5 rounded-lg border text-sm transition-colors',
-        checked
-          ? 'bg-[var(--accent-bg-soft)] border-[var(--accent-border-soft)] text-foreground'
-          : 'bg-card border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground/30'
-      )}
-    >
-      <span
-        className={cn(
-          'w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center transition-colors',
-          checked
-            ? 'bg-teal-accent border-teal-accent'
-            : 'border-border bg-background'
-        )}
-      >
-        {checked && <Check className="w-3 h-3 text-[#09090B]" />}
-      </span>
-      <span className="flex-1">{label}</span>
-      {hint && <span className="text-xs text-muted-foreground/60">{hint}</span>}
+    <button type="button" onClick={() => onChange(!checked)} className={cn('flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left text-sm transition-colors', checked ? 'border-[var(--accent-border-soft)] bg-[var(--accent-bg-soft)] text-foreground' : 'border-border bg-card text-muted-foreground hover:border-muted-foreground/30 hover:text-foreground')}>
+      <span className={cn('flex h-4 w-4 items-center justify-center rounded border', checked ? 'border-teal-accent bg-teal-accent text-[#09090B]' : 'border-border bg-background')}>{checked ? <Check className="h-3 w-3" /> : null}</span>
+      <span>{label}</span>
     </button>
   );
 }
 
-function SectionTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <h3 className="text-sm font-semibold text-foreground mb-3 pb-2 border-b border-border/60">{children}</h3>
-  );
+function splitCsv(value: string) { return value.split(',').map((x) => x.trim()).filter(Boolean); }
+function fileSize(bytes: number) { return bytes < 1024 * 1024 ? `${Math.round(bytes / 1024)} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`; }
+function revokePhotos(photos: PhotoItem[]) { photos.forEach((photo) => URL.revokeObjectURL(photo.url)); }
+function wantedRestrictions(data: WantedData) {
+  return [
+    data.notTaxi && 'Не такси',
+    data.notCarsharing && 'Не каршеринг',
+    data.notSalon && 'Не из салона',
+    data.notChina && 'Не Китай',
+    data.ptsOriginalOnly && 'ПТС только оригинал',
+    data.ownerOnly && 'Только от собственника',
+    data.sendAvtoteka && 'Присылать только с автотекой',
+  ].filter(Boolean);
 }
-
-function FieldGroup({ children, cols = 1 }: { children: React.ReactNode; cols?: 1 | 2 | 3 }) {
-  return (
-    <div
-      className={cn(
-        'grid gap-4',
-        cols === 2 && 'sm:grid-cols-2',
-        cols === 3 && 'sm:grid-cols-3'
-      )}
-    >
-      {children}
-    </div>
-  );
-}
-
-function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
-  return (
-    <div>
-      <FieldLabel required={required}>{label}</FieldLabel>
-      {children}
-    </div>
-  );
-}
-
-// ─── Step content ─────────────────────────────────────────────────────────────
-
-function SaleStep1({ data, setData }: { data: SaleFormData; setData: (d: SaleFormData) => void }) {
-  return (
-    <div className="space-y-6">
-      <SectionTitle>Основные данные</SectionTitle>
-      <FieldGroup cols={2}>
-        <Field label="Марка" required>
-          <SelectInput
-            options={['Audi', 'BMW', 'Hyundai', 'Kia', 'Лада', 'Mercedes-Benz', 'Skoda', 'Toyota', 'Volkswagen', 'Другая']}
-            value={data.make}
-            onChange={(v) => setData({ ...data, make: v })}
-            placeholder="Выберите марку"
-          />
-        </Field>
-        <Field label="Модель" required>
-          <TextInput placeholder="например, Camry" value={data.model} onChange={(v) => setData({ ...data, model: v })} />
-        </Field>
-        <Field label="Поколение">
-          <TextInput placeholder="например, XV70" value={data.generation} onChange={(v) => setData({ ...data, generation: v })} />
-        </Field>
-        <Field label="Год выпуска" required>
-          <TextInput type="number" placeholder="2020" value={data.year} onChange={(v) => setData({ ...data, year: v })} />
-        </Field>
-      </FieldGroup>
-
-      <FieldGroup cols={2}>
-        <Field label="VIN-код">
-          <TextInput placeholder="17 символов" value={data.vin} onChange={(v) => setData({ ...data, vin: v.toUpperCase() })} />
-        </Field>
-        <Field label="Город осмотра" required>
-          <TextInput placeholder="Москва" value={data.city} onChange={(v) => setData({ ...data, city: v })} />
-        </Field>
-      </FieldGroup>
-
-      <div>
-        <SectionTitle>Цена</SectionTitle>
-        <FieldGroup cols={3}>
-          <Field label="Цена объявления" required>
-            <TextInput type="number" placeholder="1 500 000" value={data.price} onChange={(v) => setData({ ...data, price: v })} />
-          </Field>
-          <Field label="Цена в руки">
-            <TextInput type="number" placeholder="1 450 000" value={data.priceInHand} onChange={(v) => setData({ ...data, priceInHand: v })} />
-          </Field>
-          <Field label="Цена на ресурсах">
-            <TextInput type="number" placeholder="1 560 000" value={data.priceOnResources} onChange={(v) => setData({ ...data, priceOnResources: v })} />
-          </Field>
-        </FieldGroup>
-      </div>
-
-      <Field label="Тип кузова">
-        <ToggleGroup
-          options={[
-            { value: 'Седан', label: 'Седан' },
-            { value: 'Лифтбек', label: 'Лифтбек' },
-            { value: 'Хэтчбек', label: 'Хэтчбек' },
-            { value: 'Внедорожник', label: 'Внедорожник' },
-            { value: 'Универсал', label: 'Универсал' },
-            { value: 'Купе', label: 'Купе' },
-            { value: 'Другой', label: 'Другой' },
-          ]}
-          value={data.bodyType}
-          onChange={(v) => setData({ ...data, bodyType: v })}
-        />
-      </Field>
-    </div>
-  );
-}
-
-function SaleStep2({ data, setData }: { data: SaleFormData; setData: (d: SaleFormData) => void }) {
-  return (
-    <div className="space-y-6">
-      <SectionTitle>Силовой агрегат</SectionTitle>
-      <FieldGroup cols={2}>
-        <Field label="Двигатель" required>
-          <TextInput placeholder="2.0 л / Бензин" value={data.engine} onChange={(v) => setData({ ...data, engine: v })} />
-        </Field>
-        <Field label="Мощность, л.с.">
-          <TextInput type="number" placeholder="150" value={data.power} onChange={(v) => setData({ ...data, power: v })} />
-        </Field>
-      </FieldGroup>
-
-      <Field label="Коробка передач" required>
-        <ToggleGroup
-          options={[
-            { value: 'МКПП', label: 'МКПП' },
-            { value: 'АКПП', label: 'АКПП' },
-            { value: 'Робот', label: 'Робот' },
-            { value: 'Вариатор', label: 'Вариатор' },
-          ]}
-          value={data.transmission}
-          onChange={(v) => setData({ ...data, transmission: v })}
-        />
-      </Field>
-
-      <Field label="Привод" required>
-        <ToggleGroup
-          options={[
-            { value: 'Передний', label: 'Передний' },
-            { value: 'Задний', label: 'Задний' },
-            { value: 'Полный', label: 'Полный' },
-          ]}
-          value={data.drive}
-          onChange={(v) => setData({ ...data, drive: v })}
-        />
-      </Field>
-
-      <FieldGroup cols={2}>
-        <Field label="Пробег, км" required>
-          <TextInput type="number" placeholder="65 000" value={data.mileage} onChange={(v) => setData({ ...data, mileage: v })} />
-        </Field>
-        <Field label="Руль">
-          <ToggleGroup
-            options={[
-              { value: 'Левый', label: 'Левый' },
-              { value: 'Правый', label: 'Правый' },
-            ]}
-            value={data.steering}
-            onChange={(v) => setData({ ...data, steering: v })}
-          />
-        </Field>
-      </FieldGroup>
-
-      <FieldGroup cols={2}>
-        <Field label="Цвет">
-          <TextInput placeholder="Белый" value={data.color} onChange={(v) => setData({ ...data, color: v })} />
-        </Field>
-        <Field label="Комплектация">
-          <TextInput placeholder="Comfort, Style…" value={data.trim} onChange={(v) => setData({ ...data, trim: v })} />
-        </Field>
-      </FieldGroup>
-    </div>
-  );
-}
-
-function SaleStep3({ data, setData }: { data: SaleFormData; setData: (d: SaleFormData) => void }) {
-  return (
-    <div className="space-y-6">
-      <SectionTitle>Владение и документы</SectionTitle>
-      <FieldGroup cols={3}>
-        <Field label="Владельцев по ПТС" required>
-          <TextInput type="number" placeholder="1" value={data.owners} onChange={(v) => setData({ ...data, owners: v })} />
-        </Field>
-        <Field label="Регистраций">
-          <TextInput type="number" placeholder="1" value={data.registrations} onChange={(v) => setData({ ...data, registrations: v })} />
-        </Field>
-        <Field label="Ключей">
-          <ToggleGroup
-            options={[
-              { value: '1', label: '1 ключ' },
-              { value: '2', label: '2 ключа' },
-              { value: '3+', label: '3+' },
-            ]}
-            value={data.keysCount}
-            onChange={(v) => setData({ ...data, keysCount: v })}
-          />
-        </Field>
-      </FieldGroup>
-
-      <Field label="ПТС">
-        <ToggleGroup
-          options={[
-            { value: 'original', label: 'Оригинал' },
-            { value: 'duplicate', label: 'Дубликат' },
-            { value: 'epts', label: 'ЭПТС' },
-          ]}
-          value={data.ptsType}
-          onChange={(v) => setData({ ...data, ptsType: v })}
-        />
-      </Field>
-
-      <SectionTitle>Кузов и окрасы</SectionTitle>
-      <FieldGroup cols={2}>
-        <Field label="Количество окрашенных элементов">
-          <ToggleGroup
-            options={[
-              { value: '0', label: 'Без окрасов' },
-              { value: '1', label: '1' },
-              { value: '2', label: '2' },
-              { value: '3', label: '3' },
-              { value: '4+', label: '4+' },
-            ]}
-            value={data.paintCount}
-            onChange={(v) => setData({ ...data, paintCount: v })}
-          />
-        </Field>
-        <Field label="Какие элементы окрашены">
-          <TextInput
-            placeholder="задний бампер, капот…"
-            value={data.paintedElements}
-            onChange={(v) => setData({ ...data, paintedElements: v })}
-          />
-        </Field>
-      </FieldGroup>
-
-      <SectionTitle>История</SectionTitle>
-      <div className="space-y-2">
-        <CheckToggle
-          label="Не такси"
-          checked={data.notTaxi}
-          onChange={(v) => setData({ ...data, notTaxi: v })}
-        />
-        <CheckToggle
-          label="Не каршеринг"
-          checked={data.notCarsharing}
-          onChange={(v) => setData({ ...data, notCarsharing: v })}
-        />
-        <CheckToggle
-          label="Нет ДТП по автотеке"
-          checked={data.avtotekaGreen}
-          onChange={(v) => setData({ ...data, avtotekaGreen: v })}
-        />
-        <CheckToggle
-          label="Нет ограничений / залогов"
-          checked={data.noRestrictions}
-          onChange={(v) => setData({ ...data, noRestrictions: v })}
-        />
-      </div>
-    </div>
-  );
-}
-
-function SaleStep4({ data, setData }: { data: SaleFormData; setData: (d: SaleFormData) => void }) {
-  return (
-    <div className="space-y-6">
-      <SectionTitle>Техническое состояние</SectionTitle>
-      <div className="space-y-2">
-        <CheckToggle
-          label="Техника в порядке"
-          checked={data.techOk}
-          onChange={(v) => setData({ ...data, techOk: v })}
-          hint="Нет нареканий"
-        />
-        <CheckToggle
-          label="Оригинальные стёкла"
-          checked={data.glassOriginal}
-          onChange={(v) => setData({ ...data, glassOriginal: v })}
-        />
-        <CheckToggle
-          label="Без вложений"
-          checked={data.noInvestment}
-          onChange={(v) => setData({ ...data, noInvestment: v })}
-          hint="Продаётся как есть"
-        />
-      </div>
-
-      {!data.noInvestment && (
-        <Field label="Что нужно сделать / вложить">
-          <textarea
-            placeholder="Опишите необходимые работы или вложения"
-            value={data.investmentNote}
-            onChange={(e) => setData({ ...data, investmentNote: e.target.value })}
-            rows={3}
-            className={cn(
-              'w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground resize-none',
-              'placeholder:text-muted-foreground/60',
-              'focus:outline-none focus:ring-2 focus:ring-teal-accent/40 focus:border-teal-accent/60'
-            )}
-          />
-        </Field>
-      )}
-
-      <SectionTitle>Резина</SectionTitle>
-      <FieldGroup cols={2}>
-        <Field label="Резина">
-          <ToggleGroup
-            options={[
-              { value: 'Лето', label: 'Лето' },
-              { value: 'Зима', label: 'Зима' },
-              { value: 'Всесезон', label: 'Всесезон' },
-              { value: 'Нет', label: 'Нет' },
-            ]}
-            value={data.tires}
-            onChange={(v) => setData({ ...data, tires: v })}
-          />
-        </Field>
-        <Field label="Второй комплект резины">
-          <ToggleGroup
-            options={[
-              { value: 'yes', label: 'Есть' },
-              { value: 'no', label: 'Нет' },
-            ]}
-            value={data.extraTires}
-            onChange={(v) => setData({ ...data, extraTires: v })}
-          />
-        </Field>
-      </FieldGroup>
-    </div>
-  );
-}
-
-function SaleStep5({ data, setData }: { data: SaleFormData; setData: (d: SaleFormData) => void }) {
-  return (
-    <div className="space-y-6">
-      <SectionTitle>Условия сделки</SectionTitle>
-      <div className="space-y-2">
-        <CheckToggle
-          label="Торг уместен"
-          checked={data.trade}
-          onChange={(v) => setData({ ...data, trade: v })}
-        />
-        <CheckToggle
-          label="Откат (откат агентам)"
-          checked={data.kickback}
-          onChange={(v) => setData({ ...data, kickback: v })}
-        />
-      </div>
-
-      <Field label="Тип продавца">
-        <ToggleGroup
-          options={[
-            { value: 'owner', label: 'Собственник' },
-            { value: 'flip', label: 'Перепродажа' },
-            { value: 'broker', label: 'Подбор' },
-            { value: 'commission', label: 'Комиссия' },
-          ]}
-          value={data.sellerType}
-          onChange={(v) => setData({ ...data, sellerType: v })}
-        />
-      </Field>
-
-      <Field label="На ресурсах">
-        <ToggleGroup
-          options={[
-            { value: 'not_listed', label: 'Не размещён' },
-            { value: 'pre_resources', label: 'До ресурсов' },
-            { value: 'on_resources', label: 'На ресурсах' },
-          ]}
-          value={data.resourceStatus}
-          onChange={(v) => setData({ ...data, resourceStatus: v })}
-        />
-      </Field>
-
-      <Field label="Контакт для связи" required>
-        <TextInput
-          placeholder="+7 (900) 000-00-00 или tg/@username"
-          value={data.contact}
-          onChange={(v) => setData({ ...data, contact: v })}
-        />
-      </Field>
-    </div>
-  );
-}
-
-function SaleStep6({ data, setData }: { data: SaleFormData; setData: (d: SaleFormData) => void }) {
-  return (
-    <div className="space-y-6">
-      <SectionTitle>Фотографии</SectionTitle>
-      <div className="border-2 border-dashed border-border rounded-xl p-8 text-center text-sm text-muted-foreground hover:border-teal-accent/40 transition-colors cursor-pointer">
-        <Camera className="w-8 h-8 mx-auto mb-2 opacity-40" />
-        <p className="font-medium">Перетащите фото сюда или нажмите для загрузки</p>
-        <p className="text-xs mt-1 text-muted-foreground/60">
-          JPG, PNG, WebP — до 10 МБ каждое. Первое фото — обложка.
-        </p>
-      </div>
-
-      <Field label="Ссылка на видео (YouTube, VK)">
-        <TextInput
-          placeholder="https://..."
-          value={data.videoUrl}
-          onChange={(v) => setData({ ...data, videoUrl: v })}
-        />
-      </Field>
-
-      <SectionTitle>Описание</SectionTitle>
-      <Field label="Комментарий продавца" required>
-        <textarea
-          placeholder="Опишите автомобиль честно: состояние, история, что сделано, что нет, почему продаёте…"
-          value={data.description}
-          onChange={(e) => setData({ ...data, description: e.target.value })}
-          rows={5}
-          className={cn(
-            'w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground resize-none',
-            'placeholder:text-muted-foreground/60',
-            'focus:outline-none focus:ring-2 focus:ring-teal-accent/40 focus:border-teal-accent/60'
-          )}
-        />
-      </Field>
-    </div>
-  );
-}
-
-// ─── Wanted Form ──────────────────────────────────────────────────────────────
-
-interface WantedFormData {
-  models: string;
-  budgetMin: string;
-  budgetMax: string;
-  yearFrom: string;
-  mileageMax: string;
-  engine: string;
-  transmission: string;
-  drive: string;
-  ownersMax: string;
-  paintAllowed: boolean;
-  notTaxi: boolean;
-  notCarsharing: boolean;
-  notSalon: boolean;
-  notChina: boolean;
-  ptsOriginalOnly: boolean;
-  ownerOnly: boolean;
-  sendAvtoteka: boolean;
-  region: string;
-  comment: string;
-  contact: string;
-}
-
-const defaultWantedData: WantedFormData = {
-  models: '',
-  budgetMin: '',
-  budgetMax: '',
-  yearFrom: '',
-  mileageMax: '',
-  engine: '',
-  transmission: '',
-  drive: '',
-  ownersMax: '',
-  paintAllowed: false,
-  notTaxi: true,
-  notCarsharing: true,
-  notSalon: false,
-  notChina: false,
-  ptsOriginalOnly: false,
-  ownerOnly: false,
-  sendAvtoteka: false,
-  region: '',
-  comment: '',
-  contact: '',
-};
-
-function WantedForm({ data, setData }: { data: WantedFormData; setData: (d: WantedFormData) => void }) {
-  return (
-    <div className="space-y-6">
-      <div className="rounded-lg border border-[var(--accent-border-soft)] bg-[var(--accent-bg-soft)] px-4 py-3 flex gap-2 text-sm text-teal-accent">
-        <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-        <span>Заявка попадает в ленту "В подбор" — любой участник сможет предложить вам подходящий лот.</span>
-      </div>
-
-      <SectionTitle>Что ищу</SectionTitle>
-      <Field label="Марки и модели (через запятую)" required>
-        <TextInput
-          placeholder="Toyota Camry, Skoda Octavia A7"
-          value={data.models}
-          onChange={(v) => setData({ ...data, models: v })}
-        />
-      </Field>
-
-      <FieldGroup cols={2}>
-        <Field label="Бюджет от">
-          <TextInput type="number" placeholder="1 500 000" value={data.budgetMin} onChange={(v) => setData({ ...data, budgetMin: v })} />
-        </Field>
-        <Field label="Бюджет до" required>
-          <TextInput type="number" placeholder="2 000 000" value={data.budgetMax} onChange={(v) => setData({ ...data, budgetMax: v })} />
-        </Field>
-        <Field label="Год выпуска от">
-          <TextInput type="number" placeholder="2018" value={data.yearFrom} onChange={(v) => setData({ ...data, yearFrom: v })} />
-        </Field>
-        <Field label="Пробег до, км">
-          <TextInput type="number" placeholder="100 000" value={data.mileageMax} onChange={(v) => setData({ ...data, mileageMax: v })} />
-        </Field>
-      </FieldGroup>
-
-      <SectionTitle>Параметры</SectionTitle>
-      <FieldGroup cols={2}>
-        <Field label="Двигатель">
-          <TextInput placeholder="1.6 / 2.0 / любой" value={data.engine} onChange={(v) => setData({ ...data, engine: v })} />
-        </Field>
-        <Field label="Владельцев не более">
-          <ToggleGroup
-            options={[
-              { value: '1', label: '1' },
-              { value: '2', label: '2' },
-              { value: '3', label: '3' },
-              { value: 'any', label: 'Любое' },
-            ]}
-            value={data.ownersMax}
-            onChange={(v) => setData({ ...data, ownersMax: v })}
-          />
-        </Field>
-      </FieldGroup>
-
-      <Field label="КПП">
-        <ToggleGroup
-          options={[
-            { value: 'МКПП', label: 'МКПП' },
-            { value: 'АКПП', label: 'АКПП' },
-            { value: 'Робот', label: 'Робот' },
-            { value: 'Вариатор', label: 'Вариатор' },
-            { value: 'Любая', label: 'Любая' },
-          ]}
-          value={data.transmission}
-          onChange={(v) => setData({ ...data, transmission: v })}
-        />
-      </Field>
-
-      <Field label="Привод">
-        <ToggleGroup
-          options={[
-            { value: 'Передний', label: 'Передний' },
-            { value: 'Задний', label: 'Задний' },
-            { value: 'Полный', label: 'Полный' },
-            { value: 'Любой', label: 'Любой' },
-          ]}
-          value={data.drive}
-          onChange={(v) => setData({ ...data, drive: v })}
-        />
-      </Field>
-
-      <Field label="Окрасы">
-        <ToggleGroup
-          options={[
-            { value: 'false', label: 'Без окрасов' },
-            { value: 'true', label: 'Допустимы' },
-          ]}
-          value={String(data.paintAllowed)}
-          onChange={(v) => setData({ ...data, paintAllowed: v === 'true' })}
-        />
-      </Field>
-
-      <SectionTitle>Ограничения</SectionTitle>
-      <div className="space-y-2">
-        <CheckToggle label="Не такси" checked={data.notTaxi} onChange={(v) => setData({ ...data, notTaxi: v })} />
-        <CheckToggle label="Не каршеринг" checked={data.notCarsharing} onChange={(v) => setData({ ...data, notCarsharing: v })} />
-        <CheckToggle label="Не из салона (не дилерский)" checked={data.notSalon} onChange={(v) => setData({ ...data, notSalon: v })} />
-        <CheckToggle label="Не Китай" checked={data.notChina} onChange={(v) => setData({ ...data, notChina: v })} />
-        <CheckToggle label="ПТС только оригинал" checked={data.ptsOriginalOnly} onChange={(v) => setData({ ...data, ptsOriginalOnly: v })} />
-        <CheckToggle label="Только от собственника" checked={data.ownerOnly} onChange={(v) => setData({ ...data, ownerOnly: v })} />
-        <CheckToggle label="Присылать только с автотекой" checked={data.sendAvtoteka} onChange={(v) => setData({ ...data, sendAvtoteka: v })} />
-      </div>
-
-      <SectionTitle>Контакт и регион</SectionTitle>
-      <FieldGroup cols={2}>
-        <Field label="Регион">
-          <TextInput placeholder="Москва и МО" value={data.region} onChange={(v) => setData({ ...data, region: v })} />
-        </Field>
-        <Field label="Как связаться" required>
-          <TextInput placeholder="+7 (900) … или tg/@username" value={data.contact} onChange={(v) => setData({ ...data, contact: v })} />
-        </Field>
-      </FieldGroup>
-
-      <Field label="Комментарий">
-        <textarea
-          placeholder="Уточните детали: какое состояние ищете, для чего берёте, как быстро готовы принять решение…"
-          value={data.comment}
-          onChange={(e) => setData({ ...data, comment: e.target.value })}
-          rows={4}
-          className={cn(
-            'w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground resize-none',
-            'placeholder:text-muted-foreground/60',
-            'focus:outline-none focus:ring-2 focus:ring-teal-accent/40 focus:border-teal-accent/60'
-          )}
-        />
-      </Field>
-    </div>
-  );
-}
-
-// ─── Sale Form state ──────────────────────────────────────────────────────────
-
-interface SaleFormData {
-  make: string;
-  model: string;
-  generation: string;
-  year: string;
-  vin: string;
-  city: string;
-  price: string;
-  priceInHand: string;
-  priceOnResources: string;
-  bodyType: string;
-  engine: string;
-  power: string;
-  transmission: string;
-  drive: string;
-  mileage: string;
-  steering: string;
-  color: string;
-  trim: string;
-  owners: string;
-  registrations: string;
-  keysCount: string;
-  ptsType: string;
-  paintCount: string;
-  paintedElements: string;
-  notTaxi: boolean;
-  notCarsharing: boolean;
-  avtotekaGreen: boolean;
-  noRestrictions: boolean;
-  techOk: boolean;
-  glassOriginal: boolean;
-  noInvestment: boolean;
-  investmentNote: string;
-  tires: string;
-  extraTires: string;
-  trade: boolean;
-  kickback: boolean;
-  sellerType: string;
-  resourceStatus: string;
-  contact: string;
-  videoUrl: string;
-  description: string;
-}
-
-const defaultSaleData: SaleFormData = {
-  make: '',
-  model: '',
-  generation: '',
-  year: '',
-  vin: '',
-  city: '',
-  price: '',
-  priceInHand: '',
-  priceOnResources: '',
-  bodyType: '',
-  engine: '',
-  power: '',
-  transmission: '',
-  drive: '',
-  mileage: '',
-  steering: 'Левый',
-  color: '',
-  trim: '',
-  owners: '',
-  registrations: '',
-  keysCount: '2',
-  ptsType: 'original',
-  paintCount: '0',
-  paintedElements: '',
-  notTaxi: true,
-  notCarsharing: true,
-  avtotekaGreen: false,
-  noRestrictions: false,
-  techOk: true,
-  glassOriginal: false,
-  noInvestment: true,
-  investmentNote: '',
-  tires: '',
-  extraTires: 'no',
-  trade: false,
-  kickback: false,
-  sellerType: 'owner',
-  resourceStatus: 'not_listed',
-  contact: '',
-  videoUrl: '',
-  description: '',
-};
-
-// ─── Progress stepper ─────────────────────────────────────────────────────────
-
-function StepBar({
-  steps,
-  current,
-  onSelect,
-}: {
-  steps: typeof SALE_STEPS;
-  current: number;
-  onSelect: (n: number) => void;
-}) {
-  return (
-    <nav className="mb-8" aria-label="Шаги формы">
-      {/* Mobile: progress bar */}
-      <div className="sm:hidden mb-4">
-        <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
-          <span>{steps[current - 1].title}</span>
-          <span>{current} / {steps.length}</span>
-        </div>
-        <div className="h-1.5 rounded-full bg-border overflow-hidden">
-          <div
-            className="h-full bg-teal-accent transition-all duration-300 rounded-full"
-            style={{ width: `${(current / steps.length) * 100}%` }}
-          />
-        </div>
-      </div>
-      {/* Desktop: step pills */}
-      <ol className="hidden sm:flex items-center gap-0 overflow-x-auto scrollbar-hide">
-        {steps.map((s, i) => {
-          const done = s.id < current;
-          const active = s.id === current;
-          const Icon = s.icon;
-          return (
-            <li key={s.id} className="flex items-center">
-              <button
-                type="button"
-                onClick={() => onSelect(s.id)}
-                className={cn(
-                  'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap',
-                  active
-                    ? 'bg-[var(--accent-bg-soft)] text-teal-accent'
-                    : done
-                    ? 'text-foreground/70 hover:text-foreground hover:bg-muted/40'
-                    : 'text-muted-foreground/60 hover:text-muted-foreground hover:bg-muted/30'
-                )}
-              >
-                <span
-                  className={cn(
-                    'w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0',
-                    active
-                      ? 'bg-teal-accent text-[#09090B]'
-                      : done
-                      ? 'bg-success/20 text-success'
-                      : 'bg-muted text-muted-foreground'
-                  )}
-                >
-                  {done ? <Check className="w-3 h-3" /> : s.id}
-                </span>
-                <Icon className="w-3.5 h-3.5 flex-shrink-0" />
-                {s.title}
-              </button>
-              {i < steps.length - 1 && (
-                <span className="mx-1 text-border text-xs">›</span>
-              )}
-            </li>
-          );
-        })}
-      </ol>
-    </nav>
-  );
-}
-
-// ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function NewListingPage() {
   const [scenario, setScenario] = useState<Scenario | null>(null);
-  const [step, setStep] = useState(1);
-  const [saleData, setSaleData] = useState<SaleFormData>(defaultSaleData);
-  const [wantedData, setWantedData] = useState<WantedFormData>(defaultWantedData);
+  const [step, setStep] = useState<SaleStep>(1);
+  const [sale, setSale] = useState<SaleData>(saleDefaults);
+  const [wanted, setWanted] = useState<WantedData>(wantedDefaults);
+  const [photos, setPhotos] = useState<PhotoItem[]>([]);
+  const [videoFile, setVideoFile] = useState<VideoItem | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [createdId, setCreatedId] = useState<string | null>(null);
+  const [submittedStatus, setSubmittedStatus] = useState<ListingStatusValue | null>(null);
+  const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
 
-  const maxStep = SALE_STEPS.length;
+  useEffect(() => {
+    let active = true;
 
-  const handleSubmit = () => setSubmitted(true);
+    async function loadSession() {
+      setAuthLoading(true);
+      try {
+        const response = await fetch('/api/auth/session', {
+          cache: 'no-store',
+        });
+        const payload = (await response.json().catch(() => null)) as
+          | {
+              authenticated?: boolean;
+              user?: SessionUser | null;
+            }
+          | null;
 
-  if (submitted) {
+        if (!active) {
+          return;
+        }
+
+        if (payload?.authenticated && payload.user) {
+          setSessionUser(payload.user);
+          setSale((current) => ({
+            ...current,
+            sellerName: current.sellerName || payload.user?.name || '',
+            contact: current.contact || payload.user?.phone || '',
+          }));
+          setWanted((current) => ({
+            ...current,
+            authorName: current.authorName || payload.user?.name || '',
+            contact: current.contact || payload.user?.phone || '',
+          }));
+        } else {
+          setSessionUser(null);
+        }
+      } catch {
+        if (active) {
+          setSessionUser(null);
+        }
+      } finally {
+        if (active) {
+          setAuthLoading(false);
+        }
+      }
+    }
+
+    void loadSession();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const resetAll = useCallback(() => {
+    revokePhotos(photos);
+    setScenario(null); setStep(1); setSale(saleDefaults); setWanted(wantedDefaults); setPhotos([]); setVideoFile(null);
+    setIsSubmitting(false); setSubmitError(null); setSubmitted(false); setCreatedId(null); setSubmittedStatus(null);
+  }, [photos]);
+
+  const addPhotos = useCallback((files: FileList | null) => {
+    if (!files) return;
+    const next = Array.from(files).filter((f) => f.type.startsWith('image/') && f.size <= 10 * 1024 * 1024).map((file) => ({ file, url: URL.createObjectURL(file) }));
+    if (next.length) setPhotos((current) => [...current, ...next]);
+  }, []);
+
+  const removePhoto = useCallback((index: number) => {
+    setPhotos((current) => {
+      URL.revokeObjectURL(current[index].url);
+      return current.filter((_, i) => i !== index);
+    });
+  }, []);
+
+  const pickVideo = useCallback((files: FileList | null) => {
+    const file = files?.[0];
+    if (!file || !file.type.startsWith('video/')) return;
+    setVideoFile({ file, name: file.name, size: fileSize(file.size) });
+  }, []);
+
+  const submit = useCallback(async (mode: SubmissionMode) => {
+    if (!scenario) return;
+    if (!sessionUser) {
+      setSubmitError('Для публикации нужно войти в аккаунт.');
+      return;
+    }
+    setSubmitError(null);
+    setIsSubmitting(true);
+    try {
+      if (scenario === 'sale') {
+        if (!photos.length) throw new Error('Добавьте хотя бы одну фотографию.');
+        const body = new FormData();
+        body.append('payload', JSON.stringify({ ...sale, initialStatus: mode }));
+        photos.forEach((photo) => body.append('photos', photo.file));
+        if (videoFile) body.append('video', videoFile.file);
+        const response = await fetch('/api/listings', { method: 'POST', body });
+        const payload = await response.json().catch(() => null) as { id?: string; error?: string; status?: ListingStatusValue } | null;
+        if (!response.ok) throw new Error(payload?.error ?? 'Не удалось создать объявление.');
+        revokePhotos(photos);
+        setPhotos([]);
+        setVideoFile(null);
+        setCreatedId(payload?.id ?? null);
+        setSubmittedStatus(payload?.status ?? mode);
+      } else {
+        const response = await fetch('/api/wanted', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...wanted, initialStatus: mode, models: splitCsv(wanted.models), restrictions: wantedRestrictions(wanted) }),
+        });
+        const payload = await response.json().catch(() => null) as { id?: string; error?: string; status?: ListingStatusValue } | null;
+        if (!response.ok) throw new Error(payload?.error ?? 'Не удалось разместить запрос.');
+        setCreatedId(payload?.id ?? null);
+        setSubmittedStatus(payload?.status ?? mode);
+      }
+      setSubmitted(true);
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : 'Ошибка отправки формы.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [photos, sale, scenario, sessionUser, videoFile, wanted]);
+
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-background">
         <MarketplaceHeader />
-        <main className="max-w-xl mx-auto px-4 sm:px-6 py-16 text-center">
-          <div className="w-16 h-16 rounded-full bg-success/15 flex items-center justify-center mx-auto mb-6">
-            <Check className="w-8 h-8 text-success" />
-          </div>
-          <h1 className="text-2xl font-bold text-foreground mb-3">
-            {scenario === 'sale' ? 'Объявление отправлено' : 'Запрос размещён'}
-          </h1>
-          <p className="text-muted-foreground mb-8">
-            {scenario === 'sale'
-              ? 'Ваше объявление появится в ленте после проверки. Обычно это занимает до 15 минут.'
-              : 'Ваш запрос в подбор опубликован. Участники платформы смогут предложить подходящий лот.'}
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <a
-              href="/"
-              className="px-6 py-2.5 rounded-lg bg-teal-dark dark:bg-teal-accent text-white dark:text-[#09090B] font-semibold text-sm hover:opacity-90"
-            >
-              На главную
-            </a>
-            <button
-              onClick={() => {
-                setScenario(null);
-                setStep(1);
-                setSaleData(defaultSaleData);
-                setWantedData(defaultWantedData);
-                setSubmitted(false);
-              }}
-              className="px-6 py-2.5 rounded-lg border border-border text-foreground text-sm hover:bg-muted/40"
-            >
-              Подать ещё
-            </button>
+        <main className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
+          <div className="rounded-3xl border border-border bg-card p-8 text-center shadow-xl">
+            <h1 className="text-2xl font-semibold text-foreground">Проверяем сессию</h1>
+            <p className="mt-3 text-sm text-muted-foreground">Загружаем доступ к публикации объявлений и личному кабинету.</p>
           </div>
         </main>
       </div>
     );
   }
 
+  if (!sessionUser) {
+    return (
+      <div className="min-h-screen bg-background">
+        <MarketplaceHeader />
+        <main className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
+          <div className="rounded-3xl border border-border bg-card p-8 text-center shadow-xl">
+            <h1 className="text-2xl font-semibold text-foreground">Публикация доступна только после входа</h1>
+            <p className="mx-auto mt-3 max-w-xl text-sm text-muted-foreground">
+              Этап 2 подключил авторизацию и роли: теперь все новые объявления и запросы в подбор создаются от конкретного пользователя и попадают в его личный кабинет.
+            </p>
+            <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+              <Link href="/login?next=%2Flisting%2Fnew" className="rounded-lg bg-teal-dark px-6 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 dark:bg-teal-accent dark:text-[#09090B]">
+                Войти
+              </Link>
+              <Link href="/register?next=%2Flisting%2Fnew" className="rounded-lg border border-border px-6 py-2.5 text-sm text-foreground transition-colors hover:bg-muted/40">
+                Зарегистрироваться
+              </Link>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (submitted) {
+    const href = createdId ? (scenario === 'sale' ? `/listing/${createdId}` : `/wanted/${createdId}`) : '/';
+    const isDraft = submittedStatus === 'DRAFT';
+    return (
+      <div className="min-h-screen bg-background">
+        <MarketplaceHeader />
+        <main className="mx-auto max-w-xl px-4 py-16 text-center sm:px-6">
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-success/15"><Check className="h-8 w-8 text-success" /></div>
+          <h1 className="mb-3 text-2xl font-bold text-foreground">{isDraft ? (scenario === 'sale' ? 'Черновик объявления сохранён' : 'Черновик запроса сохранён') : (scenario === 'sale' ? 'Объявление отправлено на модерацию' : 'Запрос отправлен на модерацию')}</h1>
+          <p className="mb-8 text-muted-foreground">{isDraft ? 'Запись сохранена в PostgreSQL и доступна в личном кабинете как черновик.' : (scenario === 'sale' ? 'Запись сохранена в PostgreSQL, медиа загружены в S3 и теперь ожидают публикации модератором.' : 'Запрос сохранён в PostgreSQL и теперь ожидает публикации модератором.')}</p>
+          <div className="flex flex-col justify-center gap-3 sm:flex-row">
+            <Link href={href} className="rounded-lg bg-teal-dark px-6 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 dark:bg-teal-accent dark:text-[#09090B]">Открыть запись</Link>
+            <button type="button" onClick={resetAll} className="rounded-lg border border-border px-6 py-2.5 text-sm text-foreground transition-colors hover:bg-muted/40">Подать еще</button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  const saleStepContent = (
+    <div className="space-y-5">
+      {step === 1 ? <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Марка" required><input className={inputClass} value={sale.make} onChange={(e) => setSale({ ...sale, make: e.target.value })} /></Field>
+        <Field label="Модель" required><input className={inputClass} value={sale.model} onChange={(e) => setSale({ ...sale, model: e.target.value })} /></Field>
+        <Field label="Поколение"><input className={inputClass} value={sale.generation} onChange={(e) => setSale({ ...sale, generation: e.target.value })} /></Field>
+        <Field label="Год" required><input className={inputClass} type="number" value={sale.year} onChange={(e) => setSale({ ...sale, year: e.target.value })} /></Field>
+        <Field label="VIN"><input className={inputClass} value={sale.vin} onChange={(e) => setSale({ ...sale, vin: e.target.value.toUpperCase() })} /></Field>
+        <Field label="Город" required><input className={inputClass} value={sale.city} onChange={(e) => setSale({ ...sale, city: e.target.value })} /></Field>
+        <Field label="Цена" required><input className={inputClass} type="number" value={sale.price} onChange={(e) => setSale({ ...sale, price: e.target.value })} /></Field>
+        <Field label="Тип кузова" required><input className={inputClass} value={sale.bodyType} onChange={(e) => setSale({ ...sale, bodyType: e.target.value })} /></Field>
+      </div> : null}
+      {step === 2 ? <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Двигатель" required><input className={inputClass} value={sale.engine} onChange={(e) => setSale({ ...sale, engine: e.target.value })} /></Field>
+        <Field label="Мощность"><input className={inputClass} type="number" value={sale.power} onChange={(e) => setSale({ ...sale, power: e.target.value })} /></Field>
+        <Field label="Коробка"><input className={inputClass} value={sale.transmission} onChange={(e) => setSale({ ...sale, transmission: e.target.value })} /></Field>
+        <Field label="Привод"><input className={inputClass} value={sale.drive} onChange={(e) => setSale({ ...sale, drive: e.target.value })} /></Field>
+        <Field label="Пробег" required><input className={inputClass} type="number" value={sale.mileage} onChange={(e) => setSale({ ...sale, mileage: e.target.value })} /></Field>
+        <Field label="Руль"><input className={inputClass} value={sale.steering} onChange={(e) => setSale({ ...sale, steering: e.target.value })} /></Field>
+        <Field label="Цвет"><input className={inputClass} value={sale.color} onChange={(e) => setSale({ ...sale, color: e.target.value })} /></Field>
+        <Field label="Комплектация"><input className={inputClass} value={sale.trim} onChange={(e) => setSale({ ...sale, trim: e.target.value })} /></Field>
+      </div> : null}
+      {step === 3 ? <div className="space-y-4">
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Field label="Владельцев" required><input className={inputClass} type="number" value={sale.owners} onChange={(e) => setSale({ ...sale, owners: e.target.value })} /></Field>
+          <Field label="Регистраций"><input className={inputClass} type="number" value={sale.registrations} onChange={(e) => setSale({ ...sale, registrations: e.target.value })} /></Field>
+          <Field label="Ключей"><input className={inputClass} value={sale.keysCount} onChange={(e) => setSale({ ...sale, keysCount: e.target.value })} /></Field>
+        </div>
+        <Field label="Тип ПТС"><input className={inputClass} value={sale.ptsType} onChange={(e) => setSale({ ...sale, ptsType: e.target.value })} /></Field>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Количество окрасов"><input className={inputClass} value={sale.paintCount} onChange={(e) => setSale({ ...sale, paintCount: e.target.value })} /></Field>
+          <Field label="Окрашенные элементы"><input className={inputClass} value={sale.paintedElements} onChange={(e) => setSale({ ...sale, paintedElements: e.target.value })} /></Field>
+        </div>
+        <div className="space-y-2">
+          <Toggle label="Не такси" checked={sale.notTaxi} onChange={(v) => setSale({ ...sale, notTaxi: v })} />
+          <Toggle label="Не каршеринг" checked={sale.notCarsharing} onChange={(v) => setSale({ ...sale, notCarsharing: v })} />
+          <Toggle label="Зеленая автотека" checked={sale.avtotekaGreen} onChange={(v) => setSale({ ...sale, avtotekaGreen: v })} />
+          <Toggle label="Нет ограничений" checked={sale.noRestrictions} onChange={(v) => setSale({ ...sale, noRestrictions: v })} />
+        </div>
+      </div> : null}
+      {step === 4 ? <div className="space-y-4">
+        <Toggle label="Техника в порядке" checked={sale.techOk} onChange={(v) => setSale({ ...sale, techOk: v })} />
+        <Toggle label="Оригинальные стекла" checked={sale.glassOriginal} onChange={(v) => setSale({ ...sale, glassOriginal: v })} />
+        <Toggle label="Без вложений" checked={sale.noInvestment} onChange={(v) => setSale({ ...sale, noInvestment: v })} />
+        {!sale.noInvestment ? <Field label="Что нужно сделать"><textarea className={cn(inputClass, 'min-h-28')} value={sale.investmentNote} onChange={(e) => setSale({ ...sale, investmentNote: e.target.value })} /></Field> : null}
+      </div> : null}
+      {step === 5 ? <div className="space-y-4">
+        <Toggle label="Торг уместен" checked={sale.trade} onChange={(v) => setSale({ ...sale, trade: v })} />
+        <Toggle label="Откат агентам" checked={sale.kickback} onChange={(v) => setSale({ ...sale, kickback: v })} />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Имя продавца" required><input className={inputClass} value={sale.sellerName} onChange={(e) => setSale({ ...sale, sellerName: e.target.value })} /></Field>
+          <Field label="Контакт" required><input className={inputClass} value={sale.contact} onChange={(e) => setSale({ ...sale, contact: e.target.value })} /></Field>
+          <Field label="Тип продавца"><input className={inputClass} value={sale.sellerType} onChange={(e) => setSale({ ...sale, sellerType: e.target.value })} /></Field>
+          <Field label="Статус на ресурсах"><input className={inputClass} value={sale.resourceStatus} onChange={(e) => setSale({ ...sale, resourceStatus: e.target.value })} /></Field>
+          <Field label="Цена в руки"><input className={inputClass} type="number" value={sale.priceInHand} onChange={(e) => setSale({ ...sale, priceInHand: e.target.value })} /></Field>
+          <Field label="Цена на ресурсах"><input className={inputClass} type="number" value={sale.priceOnResources} onChange={(e) => setSale({ ...sale, priceOnResources: e.target.value })} /></Field>
+        </div>
+      </div> : null}
+      {step === 6 ? <div className="space-y-4">
+        <Field label="Фотографии" required>
+          <div className="space-y-3">
+            <input ref={photoInputRef} type="file" accept="image/jpeg,image/png,image/webp" multiple className="sr-only" onChange={(e) => { addPhotos(e.target.files); e.target.value = ''; }} />
+            <button type="button" onClick={() => photoInputRef.current?.click()} className="flex w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground transition-colors hover:border-teal-accent/50 hover:bg-muted/20 hover:text-foreground"><Upload className="mb-3 h-8 w-8" /><span className="font-medium text-foreground">Добавить фото</span><span className="mt-1 text-xs">JPG, PNG, WebP до 10 MB. Первое фото станет обложкой.</span></button>
+            {photos.length ? <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">{photos.map((photo, index) => <div key={photo.url} className="group relative overflow-hidden rounded-lg border border-border"><img src={photo.url} alt={`Фото ${index + 1}`} className="aspect-square w-full object-cover" />{index === 0 ? <div className="absolute bottom-0 left-0 right-0 bg-teal-accent/90 py-1 text-center text-[10px] font-semibold text-[#09090B]">Обложка</div> : null}<button type="button" onClick={() => removePhoto(index)} className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/70 text-white opacity-0 transition-opacity group-hover:opacity-100"><X className="h-4 w-4" /></button></div>)}</div> : null}
+          </div>
+        </Field>
+        <Field label="Видео">
+          <div className="space-y-3">
+            <input ref={videoInputRef} type="file" accept="video/*" className="sr-only" onChange={(e) => { pickVideo(e.target.files); e.target.value = ''; }} />
+            {videoFile ? <div className="flex items-center gap-3 rounded-xl border border-border bg-muted/20 p-4"><div className="flex h-10 w-10 items-center justify-center rounded-lg bg-teal-accent/15"><Video className="h-5 w-5 text-teal-accent" /></div><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium text-foreground">{videoFile.name}</p><p className="text-xs text-muted-foreground">{videoFile.size}</p></div><button type="button" onClick={() => setVideoFile(null)} className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"><X className="h-4 w-4" /></button></div> : <button type="button" onClick={() => videoInputRef.current?.click()} className="flex w-full items-center justify-center rounded-xl border border-border px-4 py-3 text-sm text-muted-foreground transition-colors hover:bg-muted/20 hover:text-foreground">Загрузить видеофайл</button>}
+            <input className={inputClass} placeholder="Или ссылка на видео" value={sale.videoUrl} onChange={(e) => setSale({ ...sale, videoUrl: e.target.value })} />
+          </div>
+        </Field>
+        <Field label="Описание" required><textarea className={cn(inputClass, 'min-h-32')} value={sale.description} onChange={(e) => setSale({ ...sale, description: e.target.value })} /></Field>
+      </div> : null}
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-background">
       <MarketplaceHeader />
-      <main className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
-        <h1 className="text-xl font-semibold text-foreground mb-6">Подать объявление</h1>
-
-        {/* Scenario selector */}
-        {!scenario && (
-          <div className="grid sm:grid-cols-2 gap-4">
-            {/* Scenario card — Sale */}
-            <button
-              onClick={() => setScenario('sale')}
-              className="card-interactive relative p-5 rounded-xl border border-border bg-card dark:bg-surface-elevated text-left overflow-hidden hover:border-teal-accent/35 transition-[border-color,background-color] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-            >
-              <span aria-hidden="true" className="card-press-carbon absolute inset-0 rounded-[inherit] pointer-events-none z-[1] opacity-0 transition-opacity duration-[180ms] ease-out" />
-              <div className="relative z-[2]">
-                <div className="w-10 h-10 rounded-lg bg-teal-accent/15 flex items-center justify-center mb-3">
-                  <Car className="w-5 h-5 text-teal-accent" />
-                </div>
-                <h2 className="font-semibold text-foreground mb-1">Продаю автомобиль</h2>
-                <p className="text-sm text-muted-foreground">
-                  Подать объявление о продаже — фото, параметры, цена, условия
-                </p>
-              </div>
-            </button>
-
-            {/* Scenario card — Wanted */}
-            <button
-              onClick={() => setScenario('wanted')}
-              className="card-interactive relative p-5 rounded-xl border border-border bg-card dark:bg-surface-elevated text-left overflow-hidden hover:border-teal-accent/35 transition-[border-color,background-color] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-            >
-              <span aria-hidden="true" className="card-press-carbon absolute inset-0 rounded-[inherit] pointer-events-none z-[1] opacity-0 transition-opacity duration-[180ms] ease-out" />
-              <div className="relative z-[2]">
-                <div className="w-10 h-10 rounded-lg bg-teal-accent/15 flex items-center justify-center mb-3">
-                  <Search className="w-5 h-5 text-teal-accent" />
-                </div>
-                <h2 className="font-semibold text-foreground mb-1">Ищу автомобиль</h2>
-                <p className="text-sm text-muted-foreground">
-                  Разместить запрос в подбор — участники предложат подходящий вариант
-                </p>
-              </div>
-            </button>
+      <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
+        <div className="mb-6"><h1 className="text-xl font-semibold text-foreground">Подать объявление</h1><p className="mt-1 text-sm text-muted-foreground">Этап 3: форма сохраняет запись, ставит ей статус и отправляет на модерацию без изменения структуры интерфейса.</p></div>
+        {!scenario ? <div className="grid gap-4 sm:grid-cols-2">
+          <button type="button" onClick={() => setScenario('sale')} className="card-interactive relative overflow-hidden rounded-xl border border-border bg-card p-5 text-left transition-[border-color,background-color] duration-200 hover:border-teal-accent/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background dark:bg-surface-elevated"><div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-teal-accent/15"><Car className="h-5 w-5 text-teal-accent" /></div><h2 className="mb-1 font-semibold text-foreground">Продаю автомобиль</h2><p className="text-sm text-muted-foreground">Новая запись сохранится со статусом и попадёт на модерацию перед публикацией.</p></button>
+          <button type="button" onClick={() => setScenario('wanted')} className="card-interactive relative overflow-hidden rounded-xl border border-border bg-card p-5 text-left transition-[border-color,background-color] duration-200 hover:border-teal-accent/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background dark:bg-surface-elevated"><div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-teal-accent/15"><Search className="h-5 w-5 text-teal-accent" /></div><h2 className="mb-1 font-semibold text-foreground">Ищу автомобиль</h2><p className="text-sm text-muted-foreground">Запрос на подбор так же получает статус и публикуется после модерации.</p></button>
+        </div> : null}
+        {submitError ? <div className="mt-6 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">{submitError}</div> : null}
+        {scenario === 'sale' ? <div className="mt-6 rounded-xl border border-border bg-card p-5 dark:bg-surface-elevated sm:p-6">
+          <div className="mb-6 grid gap-2 sm:grid-cols-6">{saleSteps.map((item) => <button key={item.id} type="button" onClick={() => setStep(item.id)} className={cn('rounded-xl border px-3 py-3 text-left text-sm transition-colors', item.id === step ? 'border-teal-accent/40 bg-[var(--accent-bg-soft)] text-teal-accent' : item.id < step ? 'border-border bg-card text-foreground hover:bg-muted/40' : 'border-border bg-card text-muted-foreground hover:bg-muted/30')}><div className="font-semibold">{item.title}</div></button>)}</div>
+          {saleStepContent}
+          <div className="mt-8 flex items-center justify-between border-t border-border pt-5">
+            <Button variant="outline" size="sm" disabled={isSubmitting} onClick={() => step === 1 ? resetAll() : setStep((current) => (current - 1) as SaleStep)}><ChevronLeft className="mr-1 h-4 w-4" />Назад</Button>
+            {step < 6 ? <Button size="sm" disabled={isSubmitting} className="bg-teal-dark text-white dark:bg-teal-accent dark:text-[#09090B]" onClick={() => setStep((current) => (current + 1) as SaleStep)}>Далее<ChevronRight className="ml-1 h-4 w-4" /></Button> : <div className="flex items-center gap-2"><Button variant="outline" size="sm" disabled={isSubmitting} onClick={() => submit('DRAFT')}>{isSubmitting ? 'Сохраняем...' : 'Черновик'}</Button><Button size="sm" disabled={isSubmitting} className="bg-teal-dark text-white dark:bg-teal-accent dark:text-[#09090B]" onClick={() => submit('PENDING')}>{isSubmitting ? 'Сохраняем...' : 'На модерацию'}</Button></div>}
           </div>
-        )}
-
-        {/* Sale multi-step form */}
-        {scenario === 'sale' && (
-          <>
-            <StepBar steps={SALE_STEPS} current={step} onSelect={(n) => n < step && setStep(n)} />
-
-            <div className="bg-card dark:bg-surface-elevated rounded-xl border border-border p-5 sm:p-6">
-              {step === 1 && <SaleStep1 data={saleData} setData={setSaleData} />}
-              {step === 2 && <SaleStep2 data={saleData} setData={setSaleData} />}
-              {step === 3 && <SaleStep3 data={saleData} setData={setSaleData} />}
-              {step === 4 && <SaleStep4 data={saleData} setData={setSaleData} />}
-              {step === 5 && <SaleStep5 data={saleData} setData={setSaleData} />}
-              {step === 6 && <SaleStep6 data={saleData} setData={setSaleData} />}
-
-              <div className="flex items-center justify-between mt-8 pt-5 border-t border-border">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    if (step === 1) {
-                      setScenario(null);
-                    } else {
-                      setStep((s) => s - 1);
-                    }
-                  }}
-                >
-                  <ChevronLeft className="w-4 h-4 mr-1" />
-                  {step === 1 ? 'Назад' : 'Назад'}
-                </Button>
-
-                {step < maxStep ? (
-                  <Button
-                    size="sm"
-                    onClick={() => setStep((s) => s + 1)}
-                    className="bg-teal-dark dark:bg-teal-accent text-white dark:text-[#09090B]"
-                  >
-                    Далее
-                    <ChevronRight className="w-4 h-4 ml-1" />
-                  </Button>
-                ) : (
-                  <Button
-                    size="sm"
-                    onClick={handleSubmit}
-                    className="bg-teal-dark dark:bg-teal-accent text-white dark:text-[#09090B]"
-                  >
-                    Опубликовать
-                  </Button>
-                )}
-              </div>
+        </div> : null}
+        {scenario === 'wanted' ? <div className="mt-6 rounded-xl border border-border bg-card p-5 dark:bg-surface-elevated sm:p-6">
+          <button type="button" onClick={() => setScenario(null)} className="mb-6 flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"><ChevronLeft className="h-4 w-4" />Назад</button>
+          <div className="space-y-5">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Ваше имя" required><input className={inputClass} value={wanted.authorName} onChange={(e) => setWanted({ ...wanted, authorName: e.target.value })} /></Field>
+              <Field label="Контакт" required><input className={inputClass} value={wanted.contact} onChange={(e) => setWanted({ ...wanted, contact: e.target.value })} /></Field>
             </div>
-          </>
-        )}
-
-        {/* Wanted one-page form */}
-        {scenario === 'wanted' && (
-          <>
-            <button
-              onClick={() => setScenario(null)}
-              className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              Назад
-            </button>
-            <div className="bg-card dark:bg-surface-elevated rounded-xl border border-border p-5 sm:p-6">
-              <WantedForm data={wantedData} setData={setWantedData} />
-              <div className="flex justify-end mt-8 pt-5 border-t border-border">
-                <Button
-                  size="sm"
-                  onClick={handleSubmit}
-                  className="bg-teal-dark dark:bg-teal-accent text-white dark:text-[#09090B]"
-                >
-                  Разместить запрос
-                </Button>
-              </div>
+            <Field label="Марки и модели" required><input className={inputClass} value={wanted.models} onChange={(e) => setWanted({ ...wanted, models: e.target.value })} placeholder="Toyota Camry, Skoda Octavia A7" /></Field>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Бюджет от"><input className={inputClass} type="number" value={wanted.budgetMin} onChange={(e) => setWanted({ ...wanted, budgetMin: e.target.value })} /></Field>
+              <Field label="Бюджет до" required><input className={inputClass} type="number" value={wanted.budgetMax} onChange={(e) => setWanted({ ...wanted, budgetMax: e.target.value })} /></Field>
+              <Field label="Год от"><input className={inputClass} type="number" value={wanted.yearFrom} onChange={(e) => setWanted({ ...wanted, yearFrom: e.target.value })} /></Field>
+              <Field label="Пробег до"><input className={inputClass} type="number" value={wanted.mileageMax} onChange={(e) => setWanted({ ...wanted, mileageMax: e.target.value })} /></Field>
+              <Field label="Двигатель"><input className={inputClass} value={wanted.engine} onChange={(e) => setWanted({ ...wanted, engine: e.target.value })} /></Field>
+              <Field label="Владельцев не более"><input className={inputClass} value={wanted.ownersMax} onChange={(e) => setWanted({ ...wanted, ownersMax: e.target.value })} /></Field>
+              <Field label="Коробка"><input className={inputClass} value={wanted.transmission} onChange={(e) => setWanted({ ...wanted, transmission: e.target.value })} /></Field>
+              <Field label="Привод"><input className={inputClass} value={wanted.drive} onChange={(e) => setWanted({ ...wanted, drive: e.target.value })} /></Field>
+              <Field label="Регион"><input className={inputClass} value={wanted.region} onChange={(e) => setWanted({ ...wanted, region: e.target.value })} /></Field>
             </div>
-          </>
-        )}
+            <div className="space-y-2">
+              <Toggle label="Окрасы допустимы" checked={wanted.paintAllowed} onChange={(v) => setWanted({ ...wanted, paintAllowed: v })} />
+              <Toggle label="Не такси" checked={wanted.notTaxi} onChange={(v) => setWanted({ ...wanted, notTaxi: v })} />
+              <Toggle label="Не каршеринг" checked={wanted.notCarsharing} onChange={(v) => setWanted({ ...wanted, notCarsharing: v })} />
+              <Toggle label="Не из салона" checked={wanted.notSalon} onChange={(v) => setWanted({ ...wanted, notSalon: v })} />
+              <Toggle label="Не Китай" checked={wanted.notChina} onChange={(v) => setWanted({ ...wanted, notChina: v })} />
+              <Toggle label="ПТС только оригинал" checked={wanted.ptsOriginalOnly} onChange={(v) => setWanted({ ...wanted, ptsOriginalOnly: v })} />
+              <Toggle label="Только от собственника" checked={wanted.ownerOnly} onChange={(v) => setWanted({ ...wanted, ownerOnly: v })} />
+              <Toggle label="Присылать только с автотекой" checked={wanted.sendAvtoteka} onChange={(v) => setWanted({ ...wanted, sendAvtoteka: v })} />
+            </div>
+            <Field label="Комментарий"><textarea className={cn(inputClass, 'min-h-32')} value={wanted.comment} onChange={(e) => setWanted({ ...wanted, comment: e.target.value })} /></Field>
+          </div>
+          <div className="mt-8 flex justify-end gap-2 border-t border-border pt-5"><Button variant="outline" size="sm" disabled={isSubmitting} onClick={() => submit('DRAFT')}>{isSubmitting ? 'Сохраняем...' : 'Черновик'}</Button><Button size="sm" disabled={isSubmitting} className="bg-teal-dark text-white dark:bg-teal-accent dark:text-[#09090B]" onClick={() => submit('PENDING')}>{isSubmitting ? 'Сохраняем...' : 'На модерацию'}</Button></div>
+        </div> : null}
       </main>
     </div>
   );

@@ -1,7 +1,12 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { MarketplaceHeader } from '@/components/marketplace/header';
-import { wantedListings, formatPrice } from '@/lib/marketplace-data';
+import { CarbonFiberBackground } from '@/components/layout/carbon-fiber-background';
+import { ListingStatusBadge } from '@/components/listing/listing-status-badge';
+import { formatPrice } from '@/lib/marketplace-data';
+import { LISTING_STATUS_PANEL_CLASSES, getListingStatusLabel } from '@/lib/listing-status';
+import { getSessionUser } from '@/lib/server/auth';
+import { getWantedListingById } from '@/lib/server/marketplace';
 import {
   MapPin,
   Calendar,
@@ -14,10 +19,13 @@ import {
   CheckCircle,
   XCircle,
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface WantedPageProps {
   params: Promise<{ id: string }>;
 }
+
+export const dynamic = 'force-dynamic';
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
@@ -30,7 +38,8 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 
 export default async function WantedDetailPage({ params }: WantedPageProps) {
   const { id } = await params;
-  const w = wantedListings.find((l) => l.id === id);
+  const sessionUser = await getSessionUser();
+  const w = await getWantedListingById(id, sessionUser ? { userId: sessionUser.id, role: sessionUser.role } : undefined);
   if (!w) notFound();
 
   const budgetLabel = w.budgetMin
@@ -50,9 +59,10 @@ export default async function WantedDetailPage({ params }: WantedPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="relative isolate min-h-screen bg-background">
+      <CarbonFiberBackground variant="tiffany" className="top-14 inset-x-0 bottom-0" />
       <MarketplaceHeader />
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      <main className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
           <Link href="/wanted" className="hover:text-foreground transition-colors flex items-center gap-1">
@@ -62,6 +72,18 @@ export default async function WantedDetailPage({ params }: WantedPageProps) {
           <span>/</span>
           <span className="text-foreground font-medium line-clamp-1">{w.models.join(', ')}</span>
         </nav>
+
+        {w.status && w.status !== 'PUBLISHED' ? (
+          <div className={cn('mb-4 rounded-2xl border px-4 py-3', LISTING_STATUS_PANEL_CLASSES[w.status])}>
+            <div className="flex flex-wrap items-center gap-3">
+              <ListingStatusBadge status={w.status} />
+              <p className="text-sm">
+                Запрос доступен только владельцу и модераторам до публикации. Текущий статус: {getListingStatusLabel(w.status)}.
+              </p>
+            </div>
+            {w.moderationNote ? <p className="mt-2 text-sm text-muted-foreground">{w.moderationNote}</p> : null}
+          </div>
+        ) : null}
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Main content */}
@@ -155,7 +177,7 @@ export default async function WantedDetailPage({ params }: WantedPageProps) {
               <div className="pt-2 border-t border-border space-y-2">
                 <a
                   href={`https://t.me/${w.contact.replace('tg/@', '').replace('@', '')}`}
-                  className="flex items-center justify-center gap-2 w-full h-10 rounded-lg bg-teal-dark dark:bg-teal-accent text-white dark:text-[#09090B] text-sm font-semibold hover:opacity-90 transition-opacity"
+                  className="flex items-center justify-center gap-2 w-full h-11 rounded-lg bg-teal-dark dark:bg-teal-accent text-white dark:text-[#09090B] text-sm font-semibold hover:opacity-90 transition-opacity"
                 >
                   <MessageCircle className="w-4 h-4" />
                   Написать
@@ -163,13 +185,13 @@ export default async function WantedDetailPage({ params }: WantedPageProps) {
                 {w.contact.startsWith('+') && (
                   <a
                     href={`tel:${w.contact.replace(/\D/g, '')}`}
-                    className="flex items-center justify-center gap-2 w-full h-10 rounded-lg border border-border text-foreground text-sm hover:bg-muted/40 transition-colors"
+                    className="flex items-center justify-center gap-2 w-full h-11 rounded-lg border border-border text-foreground text-sm hover:bg-muted/40 transition-colors"
                   >
                     <Phone className="w-4 h-4" />
                     Позвонить
                   </a>
                 )}
-                <div className="text-center text-sm font-medium text-teal-accent mt-1">
+                <div className="text-center text-sm font-medium text-teal-accent mt-1 break-all">
                   {w.contact}
                 </div>
               </div>

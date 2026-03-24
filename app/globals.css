@@ -261,6 +261,42 @@ html:not(.dark) .card-press-carbon {
   filter: contrast(1.03) saturate(0.88);
 }
 
+/* Tiffany carbon — used on listing detail page
+   Same 9-layer weave as .carbon-fiber-center but with #3FAFA5 / #5FC2B9 / #2E978E palette.
+   24px tiles (vs 32px marketplace, 16px card-press) — page-level density.
+   Component renders this at opacity ~0.15 in dark mode, hidden in light mode.
+──────────────────────────────────────────────────────────────────────────── */
+.carbon-fiber-tiffany {
+  background-color: #2a7470;
+  background-size: 24px 24px;
+  background-position:
+    0 12px, 12px 0,
+    0 12px, 12px 0,
+    0 0, 0 0, 0 0, 0 0, 0 0;
+  background-image:
+    linear-gradient(45deg,  #195250 7%, transparent 7%, transparent 93%, #195250 93%),
+    linear-gradient(-45deg, #195250 7%, transparent 7%, transparent 93%, #195250 93%),
+    linear-gradient(-45deg, #195250 7%, transparent 7%, transparent 93%, #195250 93%),
+    linear-gradient(45deg,  #195250 7%, transparent 7%, transparent 93%, #195250 93%),
+    linear-gradient(-45deg,
+      transparent 16%, #2E978E 16%, #3FAFA5 20%, transparent 20%,
+      transparent 80%, #2E978E 80%, #3FAFA5 84%, transparent 84%),
+    linear-gradient(45deg,
+      transparent 28%, #2E978E 28%, #5FC2B9 32%, transparent 32%,
+      transparent 68%, #2E978E 68%, #5FC2B9 72%, transparent 72%),
+    linear-gradient(-135deg, #3FAFA5 8%,  #2a7470 30%, transparent 30%, transparent 68%, #3FAFA5 68%, #2a7470 90%),
+    linear-gradient(135deg,  transparent 20%, #3FAFA5 20%, rgba(63,175,165,0.55) 31%, #3FAFA5 63%, #2a7470 70%, transparent 78%),
+    linear-gradient(-135deg, transparent 20%, #3FAFA5 20%, #2a7470 38%, #3FAFA5 60%, #195250 78%, transparent 78%);
+  /* No brightness reduction — teal colors need to stay visible at page-level opacity.
+     Minimal saturation trim just takes off the neon edge while keeping the tiffany character. */
+  filter: contrast(1.06) saturate(0.92);
+}
+
+/* Light mode: component is opacity-0 already, but add override for safety */
+html:not(.dark) .carbon-fiber-tiffany {
+  filter: contrast(0.85) saturate(0.35) brightness(2.8);
+}
+
 /* Typography scale */
 .text-display { @apply text-2xl font-bold tracking-tight; }
 .text-title { @apply text-lg font-semibold; }

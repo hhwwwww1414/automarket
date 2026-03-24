@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import { Heart, ChevronLeft, ChevronRight, Expand, Play } from 'lucide-react';
-import { Vehicle } from '@/lib/marketplace-data';
+import { ChevronLeft, ChevronRight, Expand, Heart, Play } from 'lucide-react';
+import type { Vehicle } from '@/lib/marketplace-data';
 
 interface VehicleGalleryProps {
   vehicle: Vehicle;
@@ -12,158 +12,193 @@ interface VehicleGalleryProps {
 export function VehicleGallery({ vehicle }: VehicleGalleryProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const touchStartX = useRef<number | null>(null);
 
-  const images = vehicle.images.length > 0 ? vehicle.images : [vehicle.imageUrl];
+  const galleryImages = vehicle.images.filter(Boolean);
+  const fallbackImage = vehicle.imageUrl.trim() ? vehicle.imageUrl : null;
+  const images = galleryImages.length > 0 ? galleryImages : fallbackImage ? [fallbackImage] : [];
   const hasVideo = Boolean(vehicle.videoUrl);
+  const hasMedia = images.length > 0 || hasVideo;
   const totalSlides = images.length + (hasVideo ? 1 : 0);
   const isVideoSlide = hasVideo && selectedIndex === images.length;
 
   useEffect(() => {
+    setSelectedIndex((prev) => {
+      if (totalSlides === 0) {
+        return 0;
+      }
+
+      return Math.min(prev, totalSlides - 1);
+    });
+  }, [totalSlides]);
+
+  useEffect(() => {
     if (!videoRef.current || !hasVideo) return;
+
     if (isVideoSlide) {
       videoRef.current.play().catch(() => {});
-    } else {
-      videoRef.current.pause();
-      videoRef.current.currentTime = 0;
+      return;
     }
-  }, [isVideoSlide, hasVideo]);
+
+    videoRef.current.pause();
+    videoRef.current.currentTime = 0;
+  }, [hasVideo, isVideoSlide]);
 
   const goToPrevious = () => {
-    setSelectedIndex(prev => (prev === 0 ? totalSlides - 1 : prev - 1));
+    if (totalSlides < 2) return;
+    setSelectedIndex((prev) => (prev === 0 ? totalSlides - 1 : prev - 1));
   };
 
   const goToNext = () => {
-    setSelectedIndex(prev => (prev === totalSlides - 1 ? 0 : prev + 1));
+    if (totalSlides < 2) return;
+    setSelectedIndex((prev) => (prev === totalSlides - 1 ? 0 : prev + 1));
   };
 
-  const touchStartX = useRef<number | null>(null);
-  const onTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
-  const onTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartX.current === null) return;
-    const delta = e.changedTouches[0].clientX - touchStartX.current;
-    if (Math.abs(delta) > 40) delta < 0 ? goToNext() : goToPrevious();
+  const onTouchStart = (event: React.TouchEvent) => {
+    touchStartX.current = event.touches[0].clientX;
+  };
+
+  const onTouchEnd = (event: React.TouchEvent) => {
+    if (touchStartX.current === null || totalSlides < 2) return;
+
+    const delta = event.changedTouches[0].clientX - touchStartX.current;
+    if (Math.abs(delta) > 40) {
+      if (delta < 0) {
+        goToNext();
+      } else {
+        goToPrevious();
+      }
+    }
+
     touchStartX.current = null;
   };
 
   return (
     <div className="space-y-4">
       <div
-        className="relative aspect-[4/3] rounded-xl overflow-hidden bg-muted group shadow-sm ring-2 ring-border/50"
-        onTouchStart={onTouchStart}
+        className="group relative aspect-[4/3] overflow-hidden rounded-xl bg-muted shadow-sm ring-2 ring-border/50"
         onTouchEnd={onTouchEnd}
+        onTouchStart={onTouchStart}
       >
-        {images.map((src, i) => (
+        {images.map((src, index) => (
           <Image
             key={src}
             src={src}
-            alt={`${vehicle.make} ${vehicle.model} — фото ${i + 1}`}
+            alt={`${vehicle.make} ${vehicle.model} - фото ${index + 1}`}
             fill
             className={`object-cover transition-opacity duration-300 ${
-              i === selectedIndex ? 'opacity-100' : 'opacity-0 pointer-events-none'
+              index === selectedIndex ? 'opacity-100' : 'pointer-events-none opacity-0'
             }`}
-            priority={i === 0}
+            priority={index === 0}
           />
         ))}
 
-        {hasVideo && (
+        {!hasMedia ? (
+          <div className="absolute inset-0 flex items-center justify-center bg-muted text-sm font-medium text-muted-foreground">
+            Без фото и видео
+          </div>
+        ) : null}
+
+        {hasVideo ? (
           <video
             ref={videoRef}
             src={vehicle.videoUrl}
             controls
             playsInline
-            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
-              isVideoSlide ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${
+              isVideoSlide ? 'opacity-100' : 'pointer-events-none opacity-0'
             }`}
           />
-        )}
+        ) : null}
 
-        {totalSlides > 1 && (
+        {totalSlides > 1 ? (
           <>
             <button
               onClick={goToPrevious}
-              className="absolute left-3 top-1/2 -translate-y-1/2 min-w-11 min-h-11 bg-card/95 backdrop-blur-sm rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-card shadow-md z-10"
+              className="absolute left-3 top-1/2 z-10 flex min-h-11 min-w-11 -translate-y-1/2 items-center justify-center rounded-full bg-card/95 shadow-md opacity-0 transition-opacity backdrop-blur-sm group-hover:opacity-100 hover:bg-card"
               aria-label="Предыдущее фото"
             >
-              <ChevronLeft className="w-5 h-5 text-foreground" />
+              <ChevronLeft className="h-5 w-5 text-foreground" />
             </button>
             <button
               onClick={goToNext}
-              className="absolute right-3 top-1/2 -translate-y-1/2 min-w-11 min-h-11 bg-card/95 backdrop-blur-sm rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-card shadow-md z-10"
+              className="absolute right-3 top-1/2 z-10 flex min-h-11 min-w-11 -translate-y-1/2 items-center justify-center rounded-full bg-card/95 shadow-md opacity-0 transition-opacity backdrop-blur-sm group-hover:opacity-100 hover:bg-card"
               aria-label="Следующее фото"
             >
-              <ChevronRight className="w-5 h-5 text-foreground" />
+              <ChevronRight className="h-5 w-5 text-foreground" />
             </button>
           </>
-        )}
+        ) : null}
 
-        {!isVideoSlide && (
-          <div className="absolute top-3 right-3 flex gap-2 z-10">
+        {hasMedia && !isVideoSlide ? (
+          <div className="absolute right-3 top-3 z-10 flex gap-2">
             <button
-              className="min-w-11 min-h-11 bg-card/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-card shadow-sm transition-all"
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-full bg-card/90 shadow-sm transition-all backdrop-blur-sm hover:bg-card"
               aria-label="Добавить в избранное"
             >
-              <Heart className="w-5 h-5 text-muted-foreground hover:text-red-500 transition-colors" />
+              <Heart className="h-5 w-5 text-muted-foreground transition-colors hover:text-red-500" />
             </button>
             <button
-              className="min-w-11 min-h-11 bg-card/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-card shadow-sm transition-all"
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-full bg-card/90 shadow-sm transition-all backdrop-blur-sm hover:bg-card"
               aria-label="Развернуть"
             >
-              <Expand className="w-5 h-5 text-muted-foreground" />
+              <Expand className="h-5 w-5 text-muted-foreground" />
             </button>
           </div>
-        )}
+        ) : null}
 
-        <div className="absolute bottom-3 right-3 flex items-center gap-2 px-3 py-2 bg-black/60 backdrop-blur-sm rounded-lg text-white text-base font-medium z-10">
-          {isVideoSlide && <Play className="w-4 h-4 fill-white" />}
-          <span>{selectedIndex + 1} / {totalSlides}</span>
-        </div>
+        {totalSlides > 0 ? (
+          <div className="absolute bottom-3 right-3 z-10 flex items-center gap-2 rounded-lg bg-black/60 px-3 py-2 text-base font-medium text-white backdrop-blur-sm">
+            {isVideoSlide ? <Play className="h-4 w-4 fill-white" /> : null}
+            <span>
+              {selectedIndex + 1} / {totalSlides}
+            </span>
+          </div>
+        ) : null}
       </div>
 
-      {totalSlides > 1 && (
+      {totalSlides > 1 ? (
         <div className="flex gap-2 overflow-x-auto pb-2">
           {images.map((src, index) => (
             <button
               key={src}
               onClick={() => setSelectedIndex(index)}
-              className={`relative w-20 h-16 rounded-lg overflow-hidden flex-shrink-0 border-2 transition-colors ${
+              className={`relative h-16 w-20 flex-shrink-0 overflow-hidden rounded-lg border-2 transition-colors ${
                 index === selectedIndex ? 'border-teal-accent ring-1 ring-teal-accent/30' : 'border-transparent hover:border-border'
               }`}
             >
-              <Image
-                src={src}
-                alt={`Фото ${index + 1}`}
-                fill
-                className="object-cover"
-              />
+              <Image src={src} alt={`Фото ${index + 1}`} fill className="object-cover" />
             </button>
           ))}
 
-          {hasVideo && (
+          {hasVideo ? (
             <button
               onClick={() => setSelectedIndex(images.length)}
-              className={`relative w-20 h-16 rounded-lg overflow-hidden flex-shrink-0 border-2 transition-colors ${
+              className={`relative h-16 w-20 flex-shrink-0 overflow-hidden rounded-lg border-2 transition-colors ${
                 isVideoSlide ? 'border-teal-accent ring-1 ring-teal-accent/30' : 'border-transparent hover:border-border'
               }`}
             >
-              <Image
-                src={images[0]}
-                alt="Видео"
-                fill
-                className="object-cover brightness-50"
-              />
+              {images[0] ? (
+                <Image src={images[0]} alt="Видео" fill className="object-cover brightness-50" />
+              ) : (
+                <div className="absolute inset-0 bg-muted-foreground/20" />
+              )}
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-7 h-7 bg-white/90 rounded-full flex items-center justify-center">
-                  <Play className="w-3.5 h-3.5 text-foreground fill-foreground ml-0.5" />
+                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white/90">
+                  <Play className="ml-0.5 h-3.5 w-3.5 fill-foreground text-foreground" />
                 </div>
               </div>
             </button>
-          )}
+          ) : null}
         </div>
-      )}
+      ) : null}
 
-      <button className="text-base font-semibold text-teal-accent hover:text-teal-dark hover:underline underline-offset-4 transition-colors">
-        Развернуть все фото ({images.length}{hasVideo ? ' + видео' : ''})
-      </button>
+      {hasMedia ? (
+        <button className="text-base font-semibold text-teal-accent transition-colors hover:text-teal-dark hover:underline underline-offset-4">
+          Развернуть все фото ({images.length}
+          {hasVideo ? ' + видео' : ''})
+        </button>
+      ) : null}
     </div>
   );
 }

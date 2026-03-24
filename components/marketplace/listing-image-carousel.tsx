@@ -45,7 +45,7 @@ export function ListingImageCarousel({
     if (!emblaApi) return;
     onSelect(emblaApi);
     emblaApi.on('reInit', onSelect).on('select', onSelect);
-    return () => emblaApi.off('select', onSelect);
+    return () => { emblaApi.off('select', onSelect); };
   }, [emblaApi, onSelect]);
 
   const scrollPrev = useCallback(() => emblaApi?.scrollPrev(), [emblaApi]);
